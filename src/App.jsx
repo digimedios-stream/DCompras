@@ -7,7 +7,7 @@ import {
   MessageCircle, Navigation, Utensils, Smartphone, Stethoscope, ShoppingBag, Star,
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
-  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap
+  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -3127,6 +3127,24 @@ function App() {
     const currentLocalityName = currentLocalityData.name || 'Selecciona tu localidad';
     const currentLocalityProv = currentLocalityData.province || '';
 
+    const handleShare = async (biz) => {
+      const shareData = {
+        title: biz.name,
+        text: `¡Mirá este comercio en D'Compras! ${biz.name}`,
+        url: window.location.href
+      };
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) {
+          console.error('Error al compartir', err);
+        }
+      } else {
+        const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + ' ' + shareData.url)}`;
+        window.open(fallbackUrl, '_blank');
+      }
+    };
+
     return (
       <div className={`public-layout ${!isDark ? 'light-theme' : ''}`}>
 
@@ -3475,6 +3493,7 @@ function App() {
                           window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
                         }
                       }}><Navigation size={18} /> Mapa</button>
+                      <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(biz); }}><Share2 size={18} /> Compartir</button>
                     </div>
                   </div>
                 </div>
@@ -3513,6 +3532,7 @@ function App() {
                       </div>
                       <div className="business-actions">
                         <button className="action-btn primary" onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/549${biz.whatsapp}`, '_blank'); }}><MessageCircle size={18} /> WhatsApp</button>
+                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(biz); }}><Share2 size={18} /> Compartir</button>
                       </div>
                     </div>
                   </div>
@@ -3653,7 +3673,7 @@ function App() {
                   </>
                 )}
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <button className="action-btn primary" style={{ flex: 1, marginTop: '25px', padding: '16px', fontSize: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: '#25D366', color: '#fff', boxShadow: '0 10px 15px -3px rgba(37, 211, 102, 0.3)', border: 'none', cursor: 'pointer' }} onClick={() => {
                     const msg = encodeURIComponent(`Hola, vi su comercio en D'Compras y me gustaría hacerles una consulta.`);
                     window.open(`https://wa.me/549${selectedBusiness.whatsapp}?text=${msg}`, '_blank');
@@ -3668,7 +3688,10 @@ function App() {
                       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
                     }
                   }}>
-                    <Navigation size={22} /> Ver en Mapa
+                    <Navigation size={22} /> Mapa
+                  </button>
+                  <button className="action-btn" style={{ flex: 1, marginTop: '25px', padding: '16px', fontSize: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); handleShare(selectedBusiness); }}>
+                    <Share2 size={22} /> Compartir
                   </button>
                 </div>
               </div>
