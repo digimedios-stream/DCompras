@@ -348,6 +348,25 @@ function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (comercios && comercios.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const comercioId = params.get('comercio');
+      if (comercioId) {
+        const biz = comercios.find(c => String(c.id) === comercioId);
+        if (biz) {
+          setSelectedBusiness(biz);
+          if (biz.locality_id) {
+            setPublicLocalityId(biz.locality_id);
+            localStorage.setItem('dcompras_locality_id', biz.locality_id);
+          }
+          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({path: newUrl}, '', newUrl);
+        }
+      }
+    }
+  }, [comercios]);
+
   const handleEditPrices = (loc) => {
     fetchPlanes(); // Re-asegurar carga
     setEditingPriceLocality(loc);
@@ -3128,10 +3147,11 @@ function App() {
     const currentLocalityProv = currentLocalityData.province || '';
 
     const handleShare = async (biz) => {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?comercio=${biz.id}`;
       const shareData = {
         title: biz.name,
         text: `¡Mirá este comercio en D'Compras! ${biz.name}`,
-        url: window.location.href
+        url: shareUrl
       };
       if (navigator.share) {
         try {
