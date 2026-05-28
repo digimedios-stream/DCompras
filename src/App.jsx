@@ -614,6 +614,19 @@ function App() {
     }
   };
 
+  const handleDeletePagoCommerce = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este pago del comercio?')) {
+      try {
+        const { error } = await supabase.from('pagos').delete().eq('id', id);
+        if (error) throw error;
+        setPagosHistorial(prev => prev.filter(p => p.id !== id));
+      } catch (err) {
+        console.error('Error deleting commerce payment:', err);
+        alert('Error al eliminar el pago: ' + err.message);
+      }
+    }
+  };
+
   const handleSavePago = async () => {
     if (paymentTypeChoice === 'franquicia') {
       if (!newPagoLocalityId || !newPagoFranchiseConcept || !newPagoFranchiseAmount) {
@@ -2208,7 +2221,18 @@ function App() {
                                       <td><span className="badge badge-indigo">{item.planes?.name}</span></td>
                                       <td style={{ fontWeight: 600, color: isDark ? '#e2e8f0' : '#1e293b' }}>${item.amount}</td>
                                       <td style={{ color: '#fb7185' }}>-${comm.toLocaleString()} ({loc?.commission_percentage || 0}%)</td>
-                                      <td style={{ textAlign: 'right' }}><button className="edit-btn">Detalle</button></td>
+                                      <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                          <button className="edit-btn" onClick={() => setShowPaymentDetails({
+                                            locality_name: item.comercios?.localidades?.name || 'Comercio',
+                                            concept: `Plan ${item.planes?.name || ''} - ${item.comercios?.name || ''}`,
+                                            amount: item.amount,
+                                            date: item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A',
+                                            id: item.id
+                                          })}>Detalle</button>
+                                          <button className="icon-btn action-icon-btn" onClick={() => handleDeletePagoCommerce(item.id)} style={{ color: '#ef4444' }} title="Eliminar"><Trash2 size={16} /></button>
+                                        </div>
+                                      </td>
                                     </tr>
                                   );
                                 })}
@@ -2875,7 +2899,7 @@ function App() {
           {/* MODAL OFERTAS FLASH */}
           {showOfertaModal && (
             <div className="gallery-modal" style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '450px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
                 <div className="gallery-header" style={{ marginBottom: '20px' }}>
                   <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a' }}>Publicar Oferta Flash</h3>
                   <div className="close-gallery" onClick={() => setShowOfertaModal(false)}><X size={24} /></div>
@@ -2885,10 +2909,10 @@ function App() {
                   {userRole !== 'commerce' && (
                     <div>
                       <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Seleccionar Comercio</label>
-                      <select value={newOfertaCommerceId} onChange={e => setNewOfertaCommerceId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }}>
-                        <option value="">Seleccionar...</option>
+                      <select value={newOfertaCommerceId} onChange={e => setNewOfertaCommerceId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
+                        <option value="" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>Seleccionar...</option>
                         {comercios.filter(c => userRole === 'superadmin' || c.locality_id === assignedLocalityId).map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id} style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>{c.name}</option>
                         ))}
                       </select>
                     </div>
