@@ -248,6 +248,7 @@ function App() {
   const [newOfertaCommerceId, setNewOfertaCommerceId] = useState('');
   const [isSavingOferta, setIsSavingOferta] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
+  const [activeStoryIndex, setActiveStoryIndex] = useState(0);
   const [seenOfertas, setSeenOfertas] = useState(() => {
     const stored = localStorage.getItem('dcompras_seen_ofertas');
     return stored ? JSON.parse(stored) : [];
@@ -3287,15 +3288,32 @@ function App() {
         </header>
 
         {/* MURO DE OFERTAS FLASH (Estilo Stories) */}
-        {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId).length > 0 && (
+        {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId).length > 0 && (() => {
+          const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId);
+          const groupedMap = new Map();
+          filteredOfertas.forEach(o => {
+            const cid = o.commerce_id || (o.comercios && o.comercios.id) || o.id; // Fallback
+            if (!groupedMap.has(cid)) {
+              groupedMap.set(cid, { commerce: o.comercios, offers: [] });
+            }
+            groupedMap.get(cid).offers.push(o);
+          });
+          const groupedOfertas = Array.from(groupedMap.values());
+
+          return (
           <div className="ofertas-flash-container" style={{ padding: '20px 20px 0 20px', overflowX: 'auto', display: 'flex', gap: '15px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-            {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId).map((oferta) => (
+            {groupedOfertas.map((group, index) => {
+              const allSeen = group.offers.every(o => seenOfertas.includes(o.id));
+              const firstUnseenOrFirst = group.offers.find(o => !seenOfertas.includes(o.id)) || group.offers[0];
+              
+              return (
               <div 
-                key={oferta.id} 
+                key={index} 
                 onClick={() => {
-                  setSelectedOferta(oferta);
-                  if (!seenOfertas.includes(oferta.id)) {
-                    const newSeen = [...seenOfertas, oferta.id];
+                  setSelectedOferta(group.offers); // Store the array of offers
+                  setActiveStoryIndex(0);
+                  if (!seenOfertas.includes(firstUnseenOrFirst.id)) {
+                    const newSeen = [...seenOfertas, firstUnseenOrFirst.id];
                     setSeenOfertas(newSeen);
                     localStorage.setItem('dcompras_seen_ofertas', JSON.stringify(newSeen));
                   }
@@ -3307,13 +3325,13 @@ function App() {
                   height: '72px', 
                   borderRadius: '50%', 
                   padding: '3px', 
-                  background: seenOfertas.includes(oferta.id) 
+                  background: allSeen 
                     ? (isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0') 
                     : 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', 
                   display: 'flex', 
                   justifyContent: 'center', 
                   alignItems: 'center',
-                  boxShadow: seenOfertas.includes(oferta.id) ? 'none' : '0 4px 10px rgba(0,0,0,0.1)',
+                  boxShadow: allSeen ? 'none' : '0 4px 10px rgba(0,0,0,0.1)',
                   transition: 'all 0.3s'
                 }}>
                   <div style={{ 
@@ -3321,9 +3339,10 @@ function App() {
                     height: '100%', 
                     borderRadius: '50%', 
                     border: `2px solid ${isDark ? '#0f172a' : '#fff'}`, 
-                    overflow: 'hidden' 
+                    overflow: 'hidden',
+                    background: isDark ? '#1e293b' : '#f8fafc'
                   }}>
-                    <img src={oferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={group.commerce?.main_image || firstUnseenOrFirst.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 </div>
                 <span style={{ 
@@ -3337,7 +3356,7 @@ function App() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
                 }}>
-                  {oferta.comercios?.name}
+                  {group.commerce?.name || "Comercio"}
                 </span>
                 <div style={{ 
                   fontSize: '0.6rem', 
@@ -3348,12 +3367,13 @@ function App() {
                   gap: '2px', 
                   fontWeight: 800 
                 }}>
-                  <Zap size={8} fill="#fb7185" /> OFERTA
+                  <Zap size={8} fill="#fb7185" /> {group.offers.length > 1 ? 'OFERTAS' : 'OFERTA'}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
-        )}
+          );
+        })()}
         {(!isInstalled && deferredPrompt) && (
           <div className="install-banner animate-in" style={{ padding: '0 20px', marginTop: '15px' }}>
             <button 
@@ -3795,15 +3815,42 @@ function App() {
           );
         })()}
 
-        {/* MODAL DETALLE DE OFERTA FLASH */}
-        {selectedOferta && (
-          <div className="inapp-viewer-backdrop" onClick={() => setSelectedOferta(null)} style={{ zIndex: 11000 }}>
+        {/* MODAL DETALLE DE OFERTA FLASH (Estilo Story) */}
+        {selectedOferta && Array.isArray(selectedOferta) && (() => {
+          const currentOferta = selectedOferta[activeStoryIndex];
+          if (!currentOferta) return null;
+
+          const handleNextStory = (e) => {
+            e.stopPropagation();
+            if (activeStoryIndex < selectedOferta.length - 1) {
+              setActiveStoryIndex(activeStoryIndex + 1);
+              const nextOffer = selectedOferta[activeStoryIndex + 1];
+              if (!seenOfertas.includes(nextOffer.id)) {
+                const newSeen = [...seenOfertas, nextOffer.id];
+                setSeenOfertas(newSeen);
+                localStorage.setItem('dcompras_seen_ofertas', JSON.stringify(newSeen));
+              }
+            } else {
+              setSelectedOferta(null);
+            }
+          };
+
+          const handlePrevStory = (e) => {
+            e.stopPropagation();
+            if (activeStoryIndex > 0) {
+              setActiveStoryIndex(activeStoryIndex - 1);
+            }
+          };
+
+          return (
+          <div className="inapp-viewer-backdrop" onClick={() => setSelectedOferta(null)} style={{ zIndex: 11000, padding: 0 }}>
             <div 
               style={{ 
                 background: isDark ? '#0f172a' : '#ffffff', 
-                width: '90%', 
+                width: '100%', 
+                height: '100%',
                 maxWidth: '500px', 
-                borderRadius: '30px', 
+                borderRadius: '0', 
                 overflow: 'hidden', 
                 display: 'flex', 
                 flexDirection: 'column', 
@@ -3812,13 +3859,29 @@ function App() {
               }} 
               onClick={e => e.stopPropagation()}
             >
-              <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#000' }}>
-                <img src={selectedOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <div style={{ position: 'relative', width: '100%', flex: 1, background: '#111', display: 'flex', flexDirection: 'column' }}>
+                
+                {/* Progress bars at the top */}
+                <div style={{ display: 'flex', gap: '4px', padding: '15px 15px 10px', position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20 }}>
+                  {selectedOferta.map((_, i) => (
+                    <div key={i} style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.3)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: i < activeStoryIndex ? '100%' : (i === activeStoryIndex ? '100%' : '0%'), height: '100%', background: '#fff' }}></div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Commerce Info Overlay */}
+                <div style={{ position: 'absolute', top: '25px', left: '15px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 20 }}>
+                  <img src={currentOferta.comercios?.main_image} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.5)' }} alt="Logo" />
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{currentOferta.comercios?.name}</span>
+                </div>
+
+                {/* Close Button */}
                 <div 
-                  onClick={() => setSelectedOferta(null)} 
+                  onClick={(e) => { e.stopPropagation(); setSelectedOferta(null); }} 
                   style={{ 
                     position: 'absolute', 
-                    top: '15px', 
+                    top: '25px', 
                     right: '15px', 
                     background: 'rgba(0,0,0,0.5)', 
                     borderRadius: '50%', 
@@ -3829,21 +3892,25 @@ function App() {
                     alignItems: 'center', 
                     cursor: 'pointer', 
                     color: '#fff', 
-                    backdropFilter: 'blur(4px)' 
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 20
                   }}
                 >
                   <X size={20} />
                 </div>
-              </div>
-              <div style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-                  <img src={selectedOferta.comercios?.main_image} style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} alt="Logo" />
-                  <div>
-                    <h4 className="font-outfit" style={{ margin: 0, color: isDark ? '#fff' : '#0f172a', fontSize: '1.1rem' }}>{selectedOferta.comercios?.name}</h4>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Publicado hace poco</span>
-                  </div>
+
+                {/* Main Image */}
+                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={currentOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  
+                  {/* Tap areas for Prev / Next */}
+                  <div onClick={handlePrevStory} style={{ position: 'absolute', top: 0, left: 0, width: '30%', height: '100%', zIndex: 10, cursor: 'w-resize' }}></div>
+                  <div onClick={handleNextStory} style={{ position: 'absolute', top: 0, right: 0, width: '70%', height: '100%', zIndex: 10, cursor: 'e-resize' }}></div>
                 </div>
-                
+              </div>
+
+              {/* Bottom Info Area */}
+              <div style={{ padding: '24px', background: isDark ? '#0f172a' : '#fff' }}>
                 <p style={{ 
                   color: isDark ? '#e2e8f0' : '#1e293b', 
                   fontSize: '1rem', 
@@ -3854,7 +3921,7 @@ function App() {
                   borderRadius: '16px',
                   borderLeft: '4px solid #fb7185'
                 }}>
-                  {selectedOferta.description || "¡Aprovechá esta oferta única por tiempo limitado!"}
+                  {currentOferta.description || "¡Aprovechá esta oferta única por tiempo limitado!"}
                 </p>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -3862,8 +3929,8 @@ function App() {
                     className="action-btn primary" 
                     style={{ flex: 1, padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                     onClick={() => {
-                      const msg = encodeURIComponent(`Hola ${selectedOferta.comercios?.name}, vi su OFERTA FLASH en D'Compras: "${selectedOferta.description}" y me interesa.`);
-                      const rawPhone = String(selectedOferta.comercios?.whatsapp || '').replace(/\D/g, '');
+                      const msg = encodeURIComponent(`Hola ${currentOferta.comercios?.name}, vi su OFERTA FLASH en D'Compras: "${currentOferta.description}" y me interesa.`);
+                      const rawPhone = String(currentOferta.comercios?.whatsapp || '').replace(/\D/g, '');
                       const finalPhone = rawPhone.startsWith('549') ? rawPhone : `549${rawPhone}`;
                       window.open(`https://wa.me/${finalPhone}?text=${msg}`, '_blank');
                     }}
@@ -3874,7 +3941,7 @@ function App() {
                     className="action-btn" 
                     style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                     onClick={() => {
-                      setSelectedBusiness(selectedOferta.comercios);
+                      setSelectedBusiness(currentOferta.comercios);
                       setSelectedOferta(null);
                     }}
                   >
@@ -3884,7 +3951,8 @@ function App() {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   }
