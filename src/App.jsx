@@ -595,8 +595,38 @@ function App() {
 
   const handleDeleteOferta = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar esta oferta?')) return;
-    const { error } = await supabase.from('ofertas').delete().eq('id', id);
-    if (!error) fetchOfertas();
+    
+    try {
+      // Intentar borrar la imagen asociada primero
+      const oferta = ofertas.find(o => o.id === id);
+      if (oferta && oferta.image_url) {
+        const getPathFromUrl = (url) => {
+          if (!url || typeof url !== 'string') return null;
+          const marker = '/public/comercios/';
+          const index = url.indexOf(marker);
+          if (index !== -1) {
+            return decodeURI(url.substring(index + marker.length));
+          }
+          return null;
+        };
+        const path = getPathFromUrl(oferta.image_url);
+        if (path) {
+          const { error: storageError } = await supabase.storage.from('comercios').remove([path]);
+          if (storageError) {
+            console.error("Error eliminando imagen de oferta del storage:", storageError);
+          }
+        }
+      }
+
+      // Luego borrar el registro en base de datos
+      const { error } = await supabase.from('ofertas').delete().eq('id', id);
+      if (error) throw error;
+      
+      fetchOfertas();
+    } catch (err) {
+      console.error('Error al eliminar oferta:', err);
+      alert('Error al eliminar la oferta: ' + err.message);
+    }
   };
 
   const handleEditFranchisePayment = (item) => {
