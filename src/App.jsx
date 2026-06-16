@@ -10,6 +10,11 @@ import {
   Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2
 } from 'lucide-react';
 
+const removeAccents = (str) => {
+  if (!str) return '';
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
 // --- MOCK DATA ---
 const commerceData = [
   { name: 'Pizzería Roma', loc: 'Sastre', cat: 'Gastronomía', catColor: 'badge-indigo', status: 'active', icon: Utensils, rating: 4.8, reviews: 124 },
@@ -1633,10 +1638,15 @@ function App() {
                   {isLoadingComercios ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#6366f1' }}>Cargando comercios...</div>
                   ) : (() => {
-                    const searchQ = adminComerciosSearch.toLowerCase().trim();
+                    const removeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const searchQ = removeAccents(adminComerciosSearch.toLowerCase().trim());
                     const filtered = comercios.filter(c => {
                       if (!searchQ) return true;
-                      return c.name?.toLowerCase().includes(searchQ) || c.rubros?.name?.toLowerCase().includes(searchQ) || c.address?.toLowerCase().includes(searchQ) || c.localidades?.name?.toLowerCase().includes(searchQ);
+                      const name = removeAccents(c.name?.toLowerCase() || "");
+                      const rubro = removeAccents(c.rubros?.name?.toLowerCase() || "");
+                      const address = removeAccents(c.address?.toLowerCase() || "");
+                      const loc = removeAccents(c.localidades?.name?.toLowerCase() || "");
+                      return name.includes(searchQ) || rubro.includes(searchQ) || address.includes(searchQ) || loc.includes(searchQ);
                     });
                     const grouped = localities.map(loc => ({ ...loc, items: filtered.filter(c => c.locality_id === loc.id) })).filter(g => g.items.length > 0);
                     const ungrouped = filtered.filter(c => !localities.find(l => l.id === c.locality_id));
@@ -2231,12 +2241,16 @@ function App() {
                   {isLoadingPagos ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#6366f1' }}>Cargando historial...</div>
                   ) : (() => {
-                    const searchQ = adminPagosSearch.toLowerCase().trim();
+                    const removeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const searchQ = removeAccents(adminPagosSearch.toLowerCase().trim());
                     const filtered = pagosHistorial
                       .filter(p => userRole === 'superadmin' || p.comercios?.locality_id === assignedLocalityId)
                       .filter(p => {
                         if (!searchQ) return true;
-                        return p.comercios?.name?.toLowerCase().includes(searchQ) || p.comercios?.localidades?.name?.toLowerCase().includes(searchQ) || p.planes?.name?.toLowerCase().includes(searchQ);
+                        const comm = removeAccents(p.comercios?.name?.toLowerCase() || "");
+                        const loc = removeAccents(p.comercios?.localidades?.name?.toLowerCase() || "");
+                        const plan = removeAccents(p.planes?.name?.toLowerCase() || "");
+                        return comm.includes(searchQ) || loc.includes(searchQ) || plan.includes(searchQ);
                       });
                     const grouped = localities
                       .filter(loc => userRole === 'superadmin' || loc.id === assignedLocalityId)
@@ -3578,9 +3592,9 @@ function App() {
                 if (publicLocalityId && c.locality_id != publicLocalityId) return false;
                 if (selectedPublicRubroId && c.rubro_id != selectedPublicRubroId) return false;
                 if (!searchQuery.trim()) return true;
-                const query = searchQuery.toLowerCase();
-                const matchName = c.name?.toLowerCase().includes(query);
-                const matchRubro = c.rubros?.name?.toLowerCase().includes(query);
+                const query = removeAccents(searchQuery.toLowerCase());
+                const matchName = removeAccents(c.name?.toLowerCase()).includes(query);
+                const matchRubro = removeAccents(c.rubros?.name?.toLowerCase()).includes(query);
                 return matchName || matchRubro;
               }).map((biz, i) => (
                 <div key={i} className="business-card-public animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
