@@ -1513,23 +1513,44 @@ function App() {
           )}
 
           {/* TAB: RUBROS */}
-          {activeTab === 'rubros' && (
+          {activeTab === 'rubros' && (() => {
+            const adminComercios = comercios.filter(c => userRole === 'superadmin' || c.locality_id === assignedLocalityId);
+            const totalComercios = adminComercios.length;
+            const rubrosActivos = rubros.filter(r => r.status === 'active').length;
+            
+            const rubroCounts = {};
+            adminComercios.forEach(c => {
+              if (c.rubro_id) {
+                rubroCounts[c.rubro_id] = (rubroCounts[c.rubro_id] || 0) + 1;
+              }
+            });
+            let maxCount = 0;
+            let popularRubroId = null;
+            Object.keys(rubroCounts).forEach(id => {
+              if (rubroCounts[id] > maxCount) {
+                maxCount = rubroCounts[id];
+                popularRubroId = id;
+              }
+            });
+            const popularRubroName = popularRubroId ? rubros.find(r => r.id == popularRubroId)?.name || 'Ninguno' : 'Ninguno';
+
+            return (
             <>
               <div className="stats-grid">
                 <div className="stat-card animate-in">
                   <div className="stat-card-header"><div className="stat-icon indigo"><Tags size={22} /></div></div>
                   <div className="stat-label">Rubros Activos</div>
-                  <div className="stat-value">{rubrosData.filter(r => r.status === 'active').length}</div>
+                  <div className="stat-value">{rubrosActivos}</div>
                 </div>
                 <div className="stat-card animate-in" style={{ animationDelay: '0.1s' }}>
                   <div className="stat-card-header"><div className="stat-icon emerald"><TrendingUp size={22} /></div></div>
                   <div className="stat-label">Rubro más Popular</div>
-                  <div className="stat-value" style={{ fontSize: '1.2rem', marginTop: '10px', color: isDark ? '#fff' : '#0f172a' }}>Gastronomía</div>
+                  <div className="stat-value" style={{ fontSize: '1.2rem', marginTop: '10px', color: isDark ? '#fff' : '#0f172a' }}>{popularRubroName}</div>
                 </div>
                 <div className="stat-card animate-in" style={{ animationDelay: '0.2s' }}>
                   <div className="stat-card-header"><div className="stat-icon pink"><Store size={22} /></div></div>
                   <div className="stat-label">Total Comercios</div>
-                  <div className="stat-value">633</div>
+                  <div className="stat-value">{totalComercios}</div>
                 </div>
               </div>
 
@@ -1620,7 +1641,8 @@ function App() {
                 </div>
               )}
             </>
-          )}
+            );
+          })()}
 
           {/* TAB: COMERCIOS */}
           {activeTab === 'comercios' && (
