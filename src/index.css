@@ -1770,13 +1770,27 @@ h4,
   }
 }
 
-/* Android Glitch Fixes */
-.public-layout {
-  -webkit-transform: translate3d(0, 0, 0);
-  transform: translate3d(0, 0, 0);
-}
-
-.public-header, .bottom-nav, .public-search input {
-  -webkit-backdrop-filter: blur(20px);
-  transform: translateZ(0);
+/* Android Glitch Fixes & Fallbacks */
+@media (max-width: 768px) {
+  .public-header, .bottom-nav, .public-search input {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .public-header {
+    background: rgba(10, 14, 26, 0.98) !important;
+  }
+  .bottom-nav {
+    background: rgba(15, 23, 42, 0.98) !important;
+  }
+  .public-search input {
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+  
+  /* Light Theme Fallbacks */
+  .light-theme .public-header {
+    background: rgba(255, 255, 255, 0.98) !important;
+  }
+  .light-theme .bottom-nav {
+    background: rgba(255, 255, 255, 0.98) !important;
+  }
 }
