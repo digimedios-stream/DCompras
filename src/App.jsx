@@ -246,6 +246,7 @@ function App() {
   const [newOfertaImage, setNewOfertaImage] = useState(null);
   const [newOfertaPreview, setNewOfertaPreview] = useState(null);
   const [newOfertaCommerceId, setNewOfertaCommerceId] = useState('');
+  const [newOfertaDuration, setNewOfertaDuration] = useState('1');
   const [isSavingOferta, setIsSavingOferta] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
@@ -569,13 +570,27 @@ function App() {
         imageUrl = publicUrl;
       }
 
-      const commerce = comercios.find(c => c.id === commerceId);
+      let finalCommerceId = commerceId;
+      let finalLocalityId = null;
+
+      if (commerceId === 'admin_global') {
+        finalCommerceId = null;
+        finalLocalityId = userRole === 'superadmin' ? null : assignedLocalityId;
+      } else {
+        const commerce = comercios.find(c => c.id === commerceId);
+        finalLocalityId = commerce?.locality_id;
+      }
       
+      const durationDays = parseInt(newOfertaDuration) || 1;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + durationDays);
+
       const { error } = await supabase.from('ofertas').insert([{
-        commerce_id: commerceId,
-        locality_id: commerce?.locality_id,
+        commerce_id: finalCommerceId,
+        locality_id: finalLocalityId,
         description: newOfertaDesc,
-        image_url: imageUrl
+        image_url: imageUrl,
+        expires_at: expiresAt.toISOString()
       }]);
 
       if (error) throw error;
@@ -585,6 +600,7 @@ function App() {
       setNewOfertaDesc('');
       setNewOfertaImage(null);
       setNewOfertaPreview(null);
+      setNewOfertaDuration('1');
       fetchOfertas();
     } catch (err) {
       alert('Error guardando oferta: ' + err.message);
@@ -2634,7 +2650,7 @@ function App() {
           {activeTab === 'ofertas' && (
             <>
               <div className="stats-grid">
-                <div className="stat-card animate-in"><div className="stat-card-header"><div className="stat-icon indigo"><Zap size={22} /></div></div><div className="stat-label">Ofertas Activas</div><div className="stat-value">{ofertas.filter(o => !assignedLocalityId || o.locality_id === assignedLocalityId).length}</div></div>
+                <div className="stat-card animate-in"><div className="stat-card-header"><div className="stat-icon indigo"><Zap size={22} /></div></div><div className="stat-label">Ofertas Activas</div><div className="stat-value">{ofertas.filter(o => !assignedLocalityId || o.locality_id === assignedLocalityId || o.locality_id === null).length}</div></div>
                 <div className="stat-card animate-in" style={{ animationDelay: '0.1s' }}><div className="stat-card-header"><div className="stat-icon emerald"><TrendingUp size={22} /></div></div><div className="stat-label">Expiración</div><div className="stat-value" style={{ fontSize: '1.2rem', marginTop: '10px', color: isDark ? '#fff' : '#0f172a' }}>24 Horas</div></div>
                 <div className="stat-card animate-in" style={{ animationDelay: '0.2s' }}><div className="stat-card-header"><div className="stat-icon pink"><CreditCard size={22} /></div></div><div className="stat-label">Derecho Premium</div><div className="stat-value">{userRole === 'commerce' ? (assignedCommerce?.has_offers_access ? 'Habilitado' : 'No Habilitado') : 'Control Admin'}</div></div>
               </div>
@@ -2648,6 +2664,7 @@ function App() {
                       setNewOfertaDesc('');
                       setNewOfertaImage(null);
                       setNewOfertaPreview(null);
+                      setNewOfertaDuration('1');
                       setShowOfertaModal(true);
                     }}>
                       <Plus size={18} /> Publicar Oferta
@@ -2678,14 +2695,14 @@ function App() {
                         <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>Cargando ofertas...</td></tr>
                       ) : ofertas.filter(o => {
                         if (userRole === 'superadmin') return true;
-                        if (userRole === 'localadmin') return o.locality_id === assignedLocalityId;
+                        if (userRole === 'localadmin') return o.locality_id === assignedLocalityId || o.locality_id === null;
                         return o.commerce_id === assignedCommerceId;
                       }).length === 0 ? (
                         <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No hay ofertas activas actualmente.</td></tr>
                       ) : (
                         ofertas.filter(o => {
                           if (userRole === 'superadmin') return true;
-                          if (userRole === 'localadmin') return o.locality_id === assignedLocalityId;
+                          if (userRole === 'localadmin') return o.locality_id === assignedLocalityId || o.locality_id === null;
                           return o.commerce_id === assignedCommerceId;
                         }).map((item) => {
                           const expDate = new Date(item.expires_at);
@@ -2941,7 +2958,8 @@ function App() {
                     <div>
                       <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Seleccionar Comercio</label>
                       <select value={newOfertaCommerceId} onChange={e => setNewOfertaCommerceId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
-                        <option value="" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>Seleccionar...</option>
+                        <option value="" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>Seleccionar comercio...</option>
+                        <option value="admin_global" style={{ background: isDark ? '#1e293b' : '#f1f5f9', color: '#6366f1', fontWeight: 'bold' }}>⭐ Promoción General (D'Compras)</option>
                         {comercios.filter(c => userRole === 'superadmin' || c.locality_id === assignedLocalityId).map(c => (
                           <option key={c.id} value={c.id} style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>{c.name}</option>
                         ))}
@@ -2977,12 +2995,23 @@ function App() {
                     <textarea value={newOfertaDesc} onChange={e => setNewOfertaDesc(e.target.value)} placeholder="Ej: 2x1 en hamburguesas solo por hoy..." style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', height: '80px', resize: 'none' }} />
                   </div>
 
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Duración de la Oferta</label>
+                    <select value={newOfertaDuration} onChange={e => setNewOfertaDuration(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
+                      <option value="1" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>24 Horas (1 día)</option>
+                      <option value="3" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>3 Días</option>
+                      <option value="7" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>1 Semana (7 días)</option>
+                      <option value="15" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>15 Días</option>
+                      <option value="30" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>1 Mes (30 días)</option>
+                    </select>
+                  </div>
+
                   <div style={{ background: isDark ? 'rgba(99, 102, 241, 0.1)' : '#e0e7ff', padding: '15px', borderRadius: '12px', border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.2)' : '#c7d2fe'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#6366f1', marginBottom: '4px' }}>
                       <AlertCircle size={16} />
                       <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Información Importante</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#475569' }}>Esta oferta se eliminará automáticamente en 24 horas. Asegúrate de que la imagen sea clara y atractiva.</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#475569' }}>Esta oferta desaparecerá automáticamente en {newOfertaDuration === '1' ? '24 horas' : `${newOfertaDuration} días`}. Asegúrate de que la imagen sea clara y atractiva.</p>
                   </div>
 
                   <button onClick={handleSaveOferta} disabled={isSavingOferta} className="action-btn primary" style={{ padding: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -3318,8 +3347,8 @@ function App() {
         </header>
 
         {/* MURO DE OFERTAS FLASH (Estilo Stories) */}
-        {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId).length > 0 && (() => {
-          const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId);
+        {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null).length > 0 && (() => {
+          const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null);
           const groupedMap = new Map();
           filteredOfertas.forEach(o => {
             const cid = o.commerce_id || (o.comercios && o.comercios.id) || o.id; // Fallback
@@ -3386,7 +3415,7 @@ function App() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
                 }}>
-                  {group.commerce?.name || "Comercio"}
+                  {group.commerce?.name || "Novedades"}
                 </span>
                 <div style={{ 
                   fontSize: '0.6rem', 
