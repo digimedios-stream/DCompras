@@ -1724,7 +1724,7 @@ function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Nombre Comercial</label>
                           <input type="text" value={newComName} onChange={e => setNewComName(e.target.value)} placeholder="Ej: Pizzería Roma" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
@@ -1746,7 +1746,7 @@ function App() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Rubro Principal</label>
                           <select value={newComRubroId} onChange={e => setNewComRubroId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
@@ -1760,7 +1760,7 @@ function App() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Dirección Física</label>
                           <input type="text" value={newComAddress} onChange={e => setNewComAddress(e.target.value)} placeholder="Ej: San Martín 123" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
@@ -1783,7 +1783,7 @@ function App() {
                         <div style={{ textAlign: 'right', fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>{(newComDescription || '').length}/550</div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                      <div className="admin-three-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Instagram (URL)</label>
                           <input type="text" value={newComInstagram || ''} onChange={e => setNewComInstagram(e.target.value)} placeholder="instagram.com/usuario" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
@@ -1936,7 +1936,7 @@ function App() {
                             { id: 'sat', label: 'Sábado' },
                             { id: 'sun', label: 'Domingo' }
                           ].map(day => (
-                            <div key={day.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr 50px', alignItems: 'center', gap: '10px', padding: '8px', background: isDark ? 'rgba(255,255,255,0.02)' : '#fff', borderRadius: '12px' }}>
+                            <div key={day.id} className="schedule-grid" style={{ background: isDark ? 'rgba(255,255,255,0.02)' : '#fff' }}>
                               <span style={{ fontSize: '0.85rem', color: isDark ? '#e2e8f0' : '#1e293b', fontWeight: '500' }}>{day.label}</span>
                               <div style={{ display: 'flex', gap: '5px' }}>
                                 <input type="time" value={newComHours[day.id].open} onChange={e => setNewComHours({ ...newComHours, [day.id]: { ...newComHours[day.id], open: e.target.value } })} disabled={!newComHours[day.id].active} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', colorScheme: isDark ? 'dark' : 'light' }} />
@@ -2033,7 +2033,7 @@ function App() {
                       <div className="close-gallery" onClick={() => setShowLocalityModal(false)}><X size={24} /></div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div className="admin-two-cols">
                         <div><label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Localidad</label><input type="text" value={newLocName} onChange={e => setNewLocName(e.target.value)} placeholder="Ej: Sastre" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} /></div>
                         <div><label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Provincia</label><input type="text" value={newLocProv} onChange={e => setNewLocProv(e.target.value)} placeholder="Ej: Santa Fe" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} /></div>
                       </div>
@@ -2559,7 +2559,7 @@ function App() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Nombre Completo</label>
                           <input type="text" placeholder="Ej: Marcos Silva" value={newUserName} onChange={e => setNewUserName(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
@@ -2885,7 +2885,7 @@ function App() {
                   <h3 className="font-outfit">🎨 Personalización Visual</h3>
                 </div>
                 <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="admin-two-cols">
                     <div style={{ padding: '20px', borderRadius: '16px', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0'}` }}>
                       <h4 style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '0.95rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Palette size={18} color="#6366f1" /> Colores del Dashboard</h4>
                       <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '16px' }}>Define los colores primarios de las tarjetas y gráficas del panel administrativo.</p>
@@ -3098,7 +3098,7 @@ function App() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+              <div className="admin-two-cols" style={{ marginBottom: '24px' }}>
                 <div className="table-section animate-in" style={{ animationDelay: '0.1s' }}>
                   <div className="table-header">
                     <h3 className="font-outfit">📊 Distribución por Categorías</h3>
@@ -3161,7 +3161,7 @@ function App() {
                 <p style={{ margin: 0, opacity: 0.9, fontSize: '0.9rem' }}>Consulta las tarifas de planes configuradas para tu localidad y el reparto de comisiones de tu franquicia.</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <div className="admin-two-cols">
                 <div className="table-section animate-in">
                   <div className="table-header">
                     <h3 className="font-outfit">💳 Planes y Precios en {assignedLocality}</h3>

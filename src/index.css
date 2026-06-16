@@ -1728,5 +1728,41 @@ h4,
     justify-content: center;
     align-items: center;
     padding: 20px;
+}
+
+.admin-two-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .admin-two-cols {
+    grid-template-columns: 1fr 1fr;
+}
+
+.admin-three-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .admin-three-cols {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+@media (min-width: 640px) {
+  .schedule-grid {
+    grid-template-columns: 100px 1fr 1fr 50px;
   }
 }
