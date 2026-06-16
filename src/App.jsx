@@ -3554,8 +3554,8 @@ function App() {
                   {comercios.filter(c => c.status === 'active' && (!publicLocalityId || c.locality_id == publicLocalityId) && (!c.expiration_date || new Date(c.expiration_date) >= new Date())).slice(0, 3).map((biz, i) => (
                     <div key={`feat-${i}`} onClick={() => setSelectedBusiness(biz)} style={{ flex: '0 0 260px', background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', borderRadius: '24px', overflow: 'hidden', boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.1)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}>
                       <div style={{ height: '150px', width: '100%', backgroundImage: `url(${biz.main_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#334155', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(251, 191, 36, 0.95)', color: '#78350f', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', backdropFilter: 'blur(4px)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}><Star size={12} fill="#78350f" /> Top</div>
-                        <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '12px', left: '12px', width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(biz.id) ? '#ef4444' : '#fff', transition: 'all 0.2s' }}>
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(251, 191, 36, 0.95)', color: '#78350f', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}><Star size={12} fill="#78350f" /> Top</div>
+                        <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '12px', left: '12px', width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(biz.id) ? '#ef4444' : '#fff', transition: 'all 0.2s' }}>
                           <Heart size={20} fill={favorites.includes(biz.id) ? '#ef4444' : 'transparent'} />
                         </div>
                       </div>
@@ -3588,7 +3588,7 @@ function App() {
                     <div className="business-badge-status" style={{ background: checkIsOpen(biz.business_hours).open ? '#10b981' : '#ef4444', color: '#fff' }}>
                       {checkIsOpen(biz.business_hours).label}
                     </div>
-                    <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(biz.id) ? '#ef4444' : '#fff', transition: 'all 0.2s', zIndex: 10 }}>
+                    <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(biz.id) ? '#ef4444' : '#fff', transition: 'all 0.2s', zIndex: 10 }}>
                       <Heart size={22} fill={favorites.includes(biz.id) ? '#ef4444' : 'transparent'} />
                     </div>
                     {(biz.gallery_images && biz.gallery_images.length > 0) && (
@@ -3644,7 +3644,7 @@ function App() {
                       <div className="business-badge-status" style={{ background: checkIsOpen(biz.business_hours).open ? '#10b981' : '#ef4444', color: '#fff' }}>
                         {checkIsOpen(biz.business_hours).label}
                       </div>
-                      <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', zIndex: 10 }}>
+                      <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', zIndex: 10 }}>
                         <Heart size={22} fill="#ef4444" />
                       </div>
                     </div>
@@ -3670,7 +3670,7 @@ function App() {
             <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', marginBottom: '20px' }}>Todos los Rubros</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               {rubros.map((cat) => (
-                <div key={cat.id} onClick={() => { setSelectedPublicRubroId(cat.id); setPublicTab('inicio'); window.scrollTo(0, 0); }} style={{ background: isDark ? 'rgba(255,255,255,0.05)' : '#fff', padding: '20px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: isDark ? 'none' : '0 4px 6px -1px rgba(0,0,0,0.1)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, cursor: 'pointer' }}>
+                <div key={cat.id} onClick={() => { setSelectedPublicRubroId(cat.id); setPublicTab('inicio'); window.scrollTo(0, 0); }} style={{ background: isDark ? '#161a26' : '#fff', padding: '20px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', boxShadow: isDark ? 'none' : '0 4px 6px -1px rgba(0,0,0,0.1)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, cursor: 'pointer', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
                   <div style={{ width: '50px', height: '50px', borderRadius: '15px', background: '#6366f1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Tags size={24} />
                   </div>
@@ -3731,7 +3731,7 @@ function App() {
           <div className="business-detail-backdrop" onClick={() => setSelectedBusiness(null)}>
             <div style={{ background: isDark ? '#0f172a' : '#ffffff', width: '100%', maxWidth: '600px', margin: '0 auto', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'slideUp 0.3s ease-out', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
               <div style={{ height: '200px', width: '100%', position: 'relative', backgroundImage: `url(${selectedBusiness.main_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#334155' }}>
-                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', color: '#fff', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedBusiness(null)}><X size={20} /></div>
+                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.7)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', color: '#fff' }} onClick={() => setSelectedBusiness(null)}><X size={20} /></div>
                 <div style={{ position: 'absolute', bottom: '-1px', left: '0', width: '100%', height: '80px', background: `linear-gradient(to top, ${isDark ? '#0f172a' : '#ffffff'}, transparent)` }}></div>
               </div>
               <div style={{ padding: '20px 24px', flex: 1, overflowY: 'auto' }}>
@@ -3951,7 +3951,6 @@ function App() {
                     alignItems: 'center', 
                     cursor: 'pointer', 
                     color: '#fff', 
-                    backdropFilter: 'blur(4px)',
                     zIndex: 20
                   }}
                 >
