@@ -251,7 +251,11 @@ function App() {
   const [newOfertaImage, setNewOfertaImage] = useState(null);
   const [newOfertaPreview, setNewOfertaPreview] = useState(null);
   const [newOfertaCommerceId, setNewOfertaCommerceId] = useState('');
-  const [newOfertaDuration, setNewOfertaDuration] = useState('1');
+  const [newOfertaDuration, setNewOfertaDuration] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  });
   const [isSavingOferta, setIsSavingOferta] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
@@ -586,9 +590,15 @@ function App() {
         finalLocalityId = commerce?.locality_id;
       }
       
-      const durationDays = parseInt(newOfertaDuration) || 1;
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + durationDays);
+      let expiresAt;
+      if (newOfertaDuration.includes('-')) {
+        const [year, month, day] = newOfertaDuration.split('-');
+        expiresAt = new Date(year, month - 1, day, 23, 59, 59, 999);
+      } else {
+        const durationDays = parseInt(newOfertaDuration) || 1;
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
+      }
 
       const { error } = await supabase.from('ofertas').insert([{
         commerce_id: finalCommerceId,
@@ -3011,13 +3021,7 @@ function App() {
 
                   <div>
                     <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Duración de la Oferta</label>
-                    <select value={newOfertaDuration} onChange={e => setNewOfertaDuration(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
-                      <option value="1" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>24 Horas (1 día)</option>
-                      <option value="3" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>3 Días</option>
-                      <option value="7" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>1 Semana (7 días)</option>
-                      <option value="15" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>15 Días</option>
-                      <option value="30" style={{ background: isDark ? '#0f172a' : '#fff', color: isDark ? '#fff' : '#0f172a' }}>1 Mes (30 días)</option>
-                    </select>
+                    <input type="date" value={newOfertaDuration} min={new Date().toISOString().split('T')[0]} onChange={e => setNewOfertaDuration(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', colorScheme: isDark ? 'dark' : 'light' }} />
                   </div>
 
                   <div style={{ background: isDark ? 'rgba(99, 102, 241, 0.1)' : '#e0e7ff', padding: '15px', borderRadius: '12px', border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.2)' : '#c7d2fe'}` }}>
@@ -3025,7 +3029,7 @@ function App() {
                       <AlertCircle size={16} />
                       <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Información Importante</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#475569' }}>Esta oferta desaparecerá automáticamente en {newOfertaDuration === '1' ? '24 horas' : `${newOfertaDuration} días`}. Asegúrate de que la imagen sea clara y atractiva.</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#475569' }}>Esta oferta desaparecerá automáticamente al finalizar el día {newOfertaDuration.split('-').reverse().join('/')}. Asegúrate de que la imagen sea clara y atractiva.</p>
                   </div>
 
                   <button onClick={handleSaveOferta} disabled={isSavingOferta} className="action-btn primary" style={{ padding: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
