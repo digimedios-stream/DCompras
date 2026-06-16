@@ -1769,3 +1769,14 @@ h4,
     grid-template-columns: 100px 1fr 1fr 50px;
   }
 }
+
+/* Android Glitch Fixes */
+.public-layout {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+.public-header, .bottom-nav, .public-search input {
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateZ(0);
+}
