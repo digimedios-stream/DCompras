@@ -1728,6 +1728,7 @@ h4,
     justify-content: center;
     align-items: center;
     padding: 20px;
+  }
 }
 
 .admin-two-cols {
@@ -1739,6 +1740,7 @@ h4,
 @media (min-width: 768px) {
   .admin-two-cols {
     grid-template-columns: 1fr 1fr;
+  }
 }
 
 .admin-three-cols {
@@ -1750,6 +1752,7 @@ h4,
 @media (min-width: 768px) {
   .admin-three-cols {
     grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 .schedule-grid {
