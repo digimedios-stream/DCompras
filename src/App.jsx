@@ -1145,7 +1145,9 @@ function App() {
   const [showCommerceModal, setShowCommerceModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [publicLocalityId, setPublicLocalityId] = useState(localStorage.getItem('dcompras_locality_id') || null);
-  const [publicTab, setPublicTab] = useState('inicio'); // inicio, rubros, contacto
+  const [publicTab, setPublicTab] = useState('inicio'); // inicio, rubros, informacion
+  const [showUserBenefitsModal, setShowUserBenefitsModal] = useState(false);
+  const [showCommerceBenefitsModal, setShowCommerceBenefitsModal] = useState(false);
   const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('dcompras_favorites') || '[]'));
   const [showPublicLocalityModal, setShowPublicLocalityModal] = useState(false);
 
@@ -1261,6 +1263,24 @@ function App() {
     setFavorites(prev =>
       prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]
     );
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: "D'Compras AppWeb",
+      text: "¡Mirá la app de DCompras y descubrí los mejores comercios de tu ciudad!",
+      url: "https://www.dcomprasweb.com.ar"
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+        alert('¡Enlace copiado al portapapeles!');
+      }
+    } catch (err) {
+      console.log('Error compartiendo:', err);
+    }
   };
 
   const checkIsOpen = (hours) => {
@@ -3371,6 +3391,9 @@ function App() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button onClick={handleShareApp} style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', color: isDark ? '#fff' : '#0f172a', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Compartir Aplicación">
+              <Share2 size={16} />
+            </button>
             <button className="theme-toggle" onClick={toggleTheme} style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
               {isDark ? <Sun size={18} color="#fff" /> : <Moon size={18} color="#0f172a" />}
             </button>
@@ -3721,10 +3744,29 @@ function App() {
           </div>
         )}
 
-        {publicTab === 'contacto' && (
+        {publicTab === 'informacion' && (
           <div style={{ padding: '20px', paddingBottom: '100px' }}>
-            <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', marginBottom: '10px' }}>Contacto & Soporte</h3>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '30px' }}>¿Necesitas ayuda o quieres anunciar tu negocio?</p>
+            <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', marginBottom: '10px' }}>Información & Contacto</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+              <button onClick={() => setShowUserBenefitsModal(true)} style={{ background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', color: '#fff', border: 'none', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4)', textAlign: 'left' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '15px' }}><Smartphone size={28} /></div>
+                <div>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Beneficios de la App</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9 }}>Descubre por qué llevar la ciudad en tu bolsillo.</p>
+                </div>
+              </button>
+
+              <button onClick={() => setShowCommerceBenefitsModal(true)} style={{ background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', textAlign: 'left' }}>
+                <div style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', padding: '12px', borderRadius: '15px' }}><Store size={28} /></div>
+                <div>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Beneficios para Comercios</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Hacé crecer tu negocio con nuestra plataforma.</p>
+                </div>
+              </button>
+            </div>
+
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>¿Necesitas ayuda o quieres anunciar tu negocio?</p>
 
             <div style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', padding: '25px', borderRadius: '24px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
@@ -3871,8 +3913,76 @@ function App() {
           <div className={`nav-tab ${publicTab === 'inicio' ? 'active' : ''}`} onClick={() => setPublicTab('inicio')}><Home size={24} /><span>Inicio</span></div>
           <div className={`nav-tab ${publicTab === 'rubros' ? 'active' : ''}`} onClick={() => setPublicTab('rubros')}><Tags size={24} /><span>Rubros</span></div>
           <div className={`nav-tab ${publicTab === 'favoritos' ? 'active' : ''}`} onClick={() => setPublicTab('favoritos')}><Heart size={24} /><span>Favoritos</span></div>
-          <div className={`nav-tab ${publicTab === 'contacto' ? 'active' : ''}`} onClick={() => setPublicTab('contacto')}><Headset size={24} /><span>Contacto</span></div>
+          <div className={`nav-tab ${publicTab === 'informacion' ? 'active' : ''}`} onClick={() => setPublicTab('informacion')}><Headset size={24} /><span>Información</span></div>
         </nav>
+
+        {/* MODAL BENEFICIOS USUARIO */}
+        {showUserBenefitsModal && (
+          <div className="gallery-modal" style={{ zIndex: 9999, justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '400px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer', color: '#64748b' }} onClick={() => setShowUserBenefitsModal(false)}><X size={24} /></div>
+              <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+                <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#fff' }}><Smartphone size={32} /></div>
+                <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Llevá tu ciudad en el bolsillo</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#6366f1', marginTop: '2px' }}><Zap size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Ofertas Flash</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Sé el primero en enterarte de descuentos exclusivos por tiempo limitado.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#ef4444', marginTop: '2px' }}><Heart size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Comercios Favoritos</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Guardá tus lugares preferidos para acceder al instante.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#10b981', marginTop: '2px' }}><MessageCircle size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Contacto Directo</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Comunicate por WhatsApp sin intermediarios ni comisiones extra.</p></div>
+                </div>
+              </div>
+              <button onClick={() => setShowUserBenefitsModal(false)} className="action-btn" style={{ width: '100%', marginTop: '30px', padding: '14px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a' }}>Entendido</button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL BENEFICIOS COMERCIO */}
+        {showCommerceBenefitsModal && (
+          <div className="gallery-modal" style={{ zIndex: 9999, justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '400px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer', color: '#64748b' }} onClick={() => setShowCommerceBenefitsModal(false)}><X size={24} /></div>
+              <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+                <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#6366f1' }}><Store size={32} /></div>
+                <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Hacé crecer tu negocio</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#6366f1', marginTop: '2px' }}><Image size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Tu Vidriera 24/7</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Perfil con galería de fotos, horarios y todas tus redes sociales integradas.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#10b981', marginTop: '2px' }}><MessageCircle size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Venta sin Comisiones</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Tus clientes te compran directo por WhatsApp. El dinero es 100% tuyo.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#f59e0b', marginTop: '2px' }}><Share2 size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Tarjeta Digital Compartible</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Link único hacia tu perfil para compartir en tu Instagram y WhatsApp.</p></div>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowCommerceBenefitsModal(false);
+                  const rawPhone = String(currentLocalityData.contact_whatsapp || currentLocalityData.admin_whatsapp || '5493775473317').replace(/\D/g, '');
+                  const finalPhone = rawPhone.startsWith('549') ? rawPhone : `549${rawPhone}`;
+                  const msg = encodeURIComponent("Hola, me gustaría sumar mi comercio a D'Compras.");
+                  window.open(`https://wa.me/${finalPhone}?text=${msg}`, '_blank');
+                }} 
+                className="action-btn primary" 
+                style={{ width: '100%', marginTop: '30px', padding: '14px', borderRadius: '12px', background: '#6366f1', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                <MessageCircle size={18} /> Sumar mi comercio
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* IN-APP VIEWER MODAL (OVER ALL) */}
         {viewerUrl && (() => {
