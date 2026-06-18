@@ -4108,7 +4108,7 @@ function App() {
                 </div>
 
                 {/* Main Image */}
-                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img src={currentOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   
                   {/* Tap areas for Prev / Next */}
@@ -4118,7 +4118,7 @@ function App() {
               </div>
 
               {/* Bottom Info Area */}
-              <div style={{ padding: '24px', background: isDark ? '#0f172a' : '#fff' }}>
+              <div style={{ padding: '24px', background: isDark ? '#0f172a' : '#fff', overflowY: 'auto', maxHeight: '40vh' }}>
                 <p style={{ 
                   color: isDark ? '#e2e8f0' : '#1e293b', 
                   fontSize: '1rem', 
@@ -4132,30 +4132,47 @@ function App() {
                   {currentOferta.description || "¡Aprovechá esta oferta única por tiempo limitado!"}
                 </p>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    className="action-btn primary" 
-                    style={{ flex: 1, padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                    onClick={() => {
-                      const msg = encodeURIComponent(`Hola ${currentOferta.comercios?.name}, vi su OFERTA FLASH en D'Compras: "${currentOferta.description}" y me interesa.`);
-                      const rawPhone = String(currentOferta.comercios?.whatsapp || '').replace(/\D/g, '');
-                      const finalPhone = rawPhone.startsWith('549') ? rawPhone : `549${rawPhone}`;
-                      window.open(`https://wa.me/${finalPhone}?text=${msg}`, '_blank');
-                    }}
-                  >
-                    <MessageCircle size={20} /> Consultar Oferta
-                  </button>
-                  <button 
-                    className="action-btn" 
-                    style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                    onClick={() => {
-                      setSelectedBusiness(currentOferta.comercios);
-                      setSelectedOferta(null);
-                    }}
-                  >
-                    <Store size={20} /> Perfil
-                  </button>
-                </div>
+                {(currentOferta.commerce_id || currentOferta.locality_id) && (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      className="action-btn primary" 
+                      style={{ flex: 1, padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                      onClick={() => {
+                        let targetName = currentOferta.comercios?.name;
+                        let targetPhone = currentOferta.comercios?.whatsapp;
+                        
+                        if (!currentOferta.commerce_id && currentOferta.locality_id) {
+                          const locAdmin = localities.find(l => l.id === currentOferta.locality_id);
+                          targetName = 'Administración';
+                          targetPhone = locAdmin?.admin_whatsapp || locAdmin?.contact_whatsapp || '';
+                        }
+                        
+                        const msg = encodeURIComponent(`Hola ${targetName || 'Administración'}, vi su OFERTA FLASH en D'Compras: "${currentOferta.description}" y me interesa.`);
+                        const rawPhone = String(targetPhone || '').replace(/\D/g, '');
+                        const finalPhone = rawPhone.startsWith('549') ? rawPhone : `549${rawPhone}`;
+                        if (rawPhone) {
+                          window.open(`https://wa.me/${finalPhone}?text=${msg}`, '_blank');
+                        } else {
+                          alert("El contacto no tiene un número de WhatsApp configurado.");
+                        }
+                      }}
+                    >
+                      <MessageCircle size={20} /> Consultar Oferta
+                    </button>
+                    {currentOferta.commerce_id && (
+                      <button 
+                        className="action-btn" 
+                        style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                        onClick={() => {
+                          setSelectedBusiness(currentOferta.comercios);
+                          setSelectedOferta(null);
+                        }}
+                      >
+                        <Store size={20} /> Perfil
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
