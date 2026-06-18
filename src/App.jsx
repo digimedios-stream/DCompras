@@ -118,6 +118,33 @@ function App() {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPublicRubroId, setSelectedPublicRubroId] = useState(null);
+  
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationRequested, setLocationRequested] = useState(false);
+
+  useEffect(() => {
+    if ((searchQuery || selectedPublicRubroId !== null) && !locationRequested) {
+      setLocationRequested(true);
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (err) => console.warn("Ubicación rechazada o no disponible", err)
+        );
+      }
+    }
+  }, [searchQuery, selectedPublicRubroId, locationRequested]);
+
+  const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2-lat1)*(Math.PI/180);
+    const dLon = (lon2-lon1)*(Math.PI/180); 
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1*(Math.PI/180)) * Math.cos(lat2*(Math.PI/180)) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c;
+  };
+
   const [adminComerciosSearch, setAdminComerciosSearch] = useState('');
   const [adminPagosSearch, setAdminPagosSearch] = useState('');
   const [collapsedLocalities, setCollapsedLocalities] = useState({});
@@ -981,6 +1008,19 @@ function App() {
       }
     }
 
+    let latitud = null;
+    let longitud = null;
+    
+    // Extraer coordenadas si hay un link de Google Maps
+    if (newComMapsUrl) {
+      // Buscar formato @lat,lon o q=lat,lon
+      const match = newComMapsUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || newComMapsUrl.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (match) {
+        latitud = parseFloat(match[1]);
+        longitud = parseFloat(match[2]);
+      }
+    }
+
     let query;
     const payload = {
       name: newComName,
@@ -989,6 +1029,8 @@ function App() {
       whatsapp: newComWhatsapp,
       address: newComAddress,
       maps_url: newComMapsUrl,
+      latitud: latitud,
+      longitud: longitud,
       status: 'active',
       gallery_images: finalGalleryUrls,
       business_hours: newComHours,
@@ -3645,6 +3687,18 @@ function App() {
                 const matchName = removeAccents(c.name?.toLowerCase()).includes(query);
                 const matchRubro = removeAccents(c.rubros?.name?.toLowerCase()).includes(query);
                 return matchName || matchRubro;
+              }).map(c => {
+                if (userLocation && c.latitud && c.longitud) {
+                  c.distancia_km = getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, c.latitud, c.longitud);
+                } else {
+                  c.distancia_km = null;
+                }
+                return c;
+              }).sort((a, b) => {
+                if (a.distancia_km !== null && b.distancia_km !== null) return a.distancia_km - b.distancia_km;
+                if (a.distancia_km !== null) return -1;
+                if (b.distancia_km !== null) return 1;
+                return 0;
               }).map((biz, i) => (
                 <div key={i} className="business-card-public animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
                   <div className="business-image" onClick={() => setSelectedBusiness(biz)} style={{ backgroundImage: `url(${biz.main_image || ''})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#334155' }}>
@@ -3667,6 +3721,9 @@ function App() {
                     </div>
                     <div className="business-meta">
                       <span>{biz.rubros?.name || 'Sin Rubro'}</span><span>•</span><span>{biz.localidades?.name || 'Sin Localidad'}</span>
+                      {biz.distancia_km !== null && biz.distancia_km !== undefined && (
+                        <><span>•</span><span style={{color: '#6366f1', fontWeight: 'bold'}}>{biz.distancia_km < 1 ? `${Math.round(biz.distancia_km * 1000)} m` : `${biz.distancia_km.toFixed(1)} km`}</span></>
+                      )}
                     </div>
                     <div className="business-actions">
                       <button className="action-btn primary" onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/549${biz.whatsapp}`, '_blank'); }}><MessageCircle size={18} /> WhatsApp</button>
