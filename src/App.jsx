@@ -123,7 +123,7 @@ function App() {
   const [locationRequested, setLocationRequested] = useState(false);
 
   useEffect(() => {
-    if ((searchQuery || selectedPublicRubroId !== null) && !locationRequested) {
+    if ((searchQuery || selectedPublicRubroId !== null || publicAtractivoModal) && !locationRequested) {
       setLocationRequested(true);
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -132,7 +132,7 @@ function App() {
         );
       }
     }
-  }, [searchQuery, selectedPublicRubroId, locationRequested]);
+  }, [searchQuery, selectedPublicRubroId, publicAtractivoModal, locationRequested]);
 
   const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
@@ -403,8 +403,10 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Deep linking para Comercios
     if (comercios && comercios.length > 0) {
-      const params = new URLSearchParams(window.location.search);
       const comercioId = params.get('comercio');
       if (comercioId) {
         const biz = comercios.find(c => String(c.id) === comercioId);
@@ -419,7 +421,24 @@ function App() {
         }
       }
     }
-  }, [comercios]);
+
+    // Deep linking para Atractivos Turísticos
+    if (atractivos && atractivos.length > 0) {
+      const atractivoId = params.get('atractivo');
+      if (atractivoId) {
+        const atr = atractivos.find(a => String(a.id) === atractivoId);
+        if (atr) {
+          if (atr.locality_id) {
+            setPublicLocalityId(atr.locality_id);
+            localStorage.setItem('dcompras_locality_id', atr.locality_id);
+          }
+          setPublicAtractivoModal(true);
+          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({path: newUrl}, '', newUrl);
+        }
+      }
+    }
+  }, [comercios, atractivos]);
 
   const handleEditPrices = (loc) => {
     fetchPlanes(); // Re-asegurar carga
