@@ -122,6 +122,7 @@ function App() {
   const [userLocation, setUserLocation] = useState(null);
   const [locationRequested, setLocationRequested] = useState(false);
   const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
+  const [sharedAtractivoId, setSharedAtractivoId] = useState(null);
 
   useEffect(() => {
     if ((searchQuery || selectedPublicRubroId !== null || publicAtractivoModal) && !locationRequested) {
@@ -433,6 +434,7 @@ function App() {
             localStorage.setItem('dcompras_locality_id', atr.locality_id);
           }
           setPublicAtractivoModal(true);
+          setSharedAtractivoId(atr.id);
           const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
           window.history.replaceState({path: newUrl}, '', newUrl);
         }
@@ -4332,7 +4334,13 @@ function App() {
                 <button className="close-btn" onClick={() => setPublicAtractivoModal(false)}><X size={24} /></button>
               </div>
               <div className="modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                {atractivos.filter(a => a.locality_id === currentLocalityData?.id).map(atractivo => (
+                {atractivos.filter(a => a.locality_id === currentLocalityData?.id).sort((a, b) => {
+                  if (sharedAtractivoId) {
+                    if (a.id === sharedAtractivoId) return -1;
+                    if (b.id === sharedAtractivoId) return 1;
+                  }
+                  return 0;
+                }).map(atractivo => (
                   <div key={atractivo.id} style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '20px', overflow: 'hidden', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
                     {atractivo.image_url && (
                       <div style={{ width: '100%', height: '250px', backgroundImage: `url(${atractivo.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
@@ -4358,7 +4366,7 @@ function App() {
                       </div>
                       {atractivo.historian_name && (
                         <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, paddingTop: '15px' }}>
-                          Reseña histórica por: Prof. {atractivo.historian_name}
+                          Reseña histórica por: {atractivo.historian_name}
                         </div>
                       )}
                     </div>
