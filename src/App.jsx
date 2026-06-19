@@ -7,7 +7,7 @@ import {
   MessageCircle, Navigation, Utensils, Smartphone, Stethoscope, ShoppingBag, Star,
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
-  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2
+  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark
 } from 'lucide-react';
 
 const removeAccents = (str) => {
@@ -291,6 +291,20 @@ function App() {
     return stored ? JSON.parse(stored) : [];
   });
 
+  // Estados para Turismo
+  const [atractivos, setAtractivos] = useState([]);
+  const [isLoadingAtractivos, setIsLoadingAtractivos] = useState(false);
+  const [showTurismoModal, setShowTurismoModal] = useState(false);
+  const [newAtractivoName, setNewAtractivoName] = useState('');
+  const [newAtractivoDesc, setNewAtractivoDesc] = useState('');
+  const [newAtractivoImage, setNewAtractivoImage] = useState(null);
+  const [newAtractivoPreview, setNewAtractivoPreview] = useState(null);
+  const [newAtractivoMapsUrl, setNewAtractivoMapsUrl] = useState('');
+  const [newAtractivoWhatsapp, setNewAtractivoWhatsapp] = useState('');
+  const [editingAtractivoId, setEditingAtractivoId] = useState(null);
+  const [isSavingAtractivo, setIsSavingAtractivo] = useState(false);
+  const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
+
   const [analyticsStats, setAnalyticsStats] = useState({ opens: 0, installs: 0 });
 
   const fetchAnalytics = async () => {
@@ -337,6 +351,7 @@ function App() {
     fetchPreciosPlanes();
     fetchUsersList();
     fetchOfertas();
+    fetchAtractivos();
     fetchAnalytics();
 
     const logAppOpen = async () => {
@@ -449,6 +464,8 @@ function App() {
       setAssignedCommerceId(data.commerce_id);
       if (data.role === 'commerce') {
         setActiveTab('comercios');
+      } else if (data.role === 'historian') {
+        setActiveTab('turismo');
       }
       setView('admin');
     } else {
@@ -509,9 +526,10 @@ function App() {
         let roleLabel = 'Comercio';
         if (p.role === 'superadmin') roleLabel = 'Super Admin';
         else if (p.role === 'localadmin') roleLabel = 'Admin Local';
+        else if (p.role === 'historian') roleLabel = 'Historiador';
 
         let scopeLabel = 'Global';
-        if (p.role === 'localadmin') {
+        if (p.role === 'localadmin' || p.role === 'historian') {
           scopeLabel = p.localidades?.name || 'Localidad';
         } else if (p.role === 'commerce') {
           scopeLabel = p.comercios?.name || 'Comercio';
@@ -573,6 +591,17 @@ function App() {
     
     if (!error) setOfertas(data || []);
     setIsLoadingOfertas(false);
+  };
+
+  const fetchAtractivos = async () => {
+    setIsLoadingAtractivos(true);
+    const { data, error } = await supabase
+      .from('atractivos_turisticos')
+      .select('*, localidades(name)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    if (!error) setAtractivos(data || []);
+    setIsLoadingAtractivos(false);
   };
 
   const handleSaveOferta = async () => {
@@ -648,6 +677,84 @@ function App() {
       alert('Error guardando oferta: ' + err.message);
     } finally {
       setIsSavingOferta(false);
+    }
+  };
+
+  const handleSaveAtractivo = async () => {
+    if (!newAtractivoName.trim()) {
+      alert("El nombre es obligatorio.");
+      return;
+    }
+    setIsSavingAtractivo(true);
+    try {
+      let imageUrl = newAtractivoPreview;
+      if (newAtractivoImage) {
+        const fileExt = newAtractivoImage.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `turismo/${fileName}`;
+        const { error: uploadError } = await supabase.storage.from('comercios').upload(filePath, newAtractivoImage);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('comercios').getPublicUrl(filePath);
+        imageUrl = publicUrl;
+      }
+
+      let lat = null;
+      let lon = null;
+      if (newAtractivoMapsUrl) {
+        const match = newAtractivoMapsUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || newAtractivoMapsUrl.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (match) {
+          lat = parseFloat(match[1]);
+          lon = parseFloat(match[2]);
+        }
+      }
+
+      const payload = {
+        locality_id: assignedLocalityId,
+        historian_id: session?.user?.id,
+        historian_name: session?.user?.user_metadata?.full_name || 'Historiador',
+        name: newAtractivoName,
+        description: newAtractivoDesc,
+        image_url: imageUrl,
+        maps_url: newAtractivoMapsUrl,
+        whatsapp: newAtractivoWhatsapp,
+        latitud: lat,
+        longitud: lon,
+        status: 'active'
+      };
+
+      if (editingAtractivoId) {
+        const { error } = await supabase.from('atractivos_turisticos').update(payload).eq('id', editingAtractivoId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('atractivos_turisticos').insert([payload]);
+        if (error) throw error;
+      }
+
+      setShowTurismoModal(false);
+      setEditingAtractivoId(null);
+      setNewAtractivoName('');
+      setNewAtractivoDesc('');
+      setNewAtractivoImage(null);
+      setNewAtractivoPreview(null);
+      setNewAtractivoMapsUrl('');
+      setNewAtractivoWhatsapp('');
+      fetchAtractivos();
+      alert('Atractivo turístico guardado correctamente.');
+    } catch (err) {
+      alert('Error guardando atractivo: ' + err.message);
+    } finally {
+      setIsSavingAtractivo(false);
+    }
+  };
+
+  const handleDeleteAtractivo = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este atractivo?')) return;
+    try {
+      const { error } = await supabase.from('atractivos_turisticos').delete().eq('id', id);
+      if (error) throw error;
+      fetchAtractivos();
+    } catch (err) {
+      alert('Error eliminando atractivo: ' + err.message);
     }
   };
 
@@ -1213,7 +1320,7 @@ function App() {
     setEditingUser(user);
     setNewUserName(user.name || '');
     setNewUserEmail(user.email || '');
-    setNewUserRoleChoice(user.role === 'Super Admin' ? 'super' : user.role === 'Admin Local' ? 'local' : 'commerce');
+    setNewUserRoleChoice(user.role === 'Super Admin' ? 'super' : user.role === 'Admin Local' ? 'local' : user.role === 'Historiador' ? 'historian' : 'commerce');
     setNewUserLocalityId(user.locality_id || '');
     setNewUserCommerceId(user.commerce_id || '');
     setShowUserModal(true);
@@ -1262,8 +1369,8 @@ function App() {
     const payload = {
       full_name: newUserName,
       email: newUserEmail,
-      role: newUserRoleChoice === 'super' ? 'superadmin' : newUserRoleChoice === 'local' ? 'localadmin' : 'commerce',
-      locality_id: newUserRoleChoice === 'local' ? newUserLocalityId || null : null,
+      role: newUserRoleChoice === 'super' ? 'superadmin' : newUserRoleChoice === 'local' ? 'localadmin' : newUserRoleChoice === 'historian' ? 'historian' : 'commerce',
+      locality_id: (newUserRoleChoice === 'local' || newUserRoleChoice === 'historian') ? newUserLocalityId || null : null,
       commerce_id: newUserRoleChoice === 'commerce' ? newUserCommerceId || null : null,
       status: 'active'
     };
@@ -1372,6 +1479,7 @@ function App() {
       { id: 'rubros', label: 'Rubros', icon: Tags, roles: ['superadmin', 'localadmin'] },
       { id: 'usuarios', label: 'Accesos', icon: Users, roles: ['superadmin', 'localadmin'] },
       { id: 'ofertas', label: 'Ofertas Flash', icon: Zap, roles: ['superadmin', 'localadmin', 'commerce'] },
+      { id: 'turismo', label: 'Turismo', icon: Landmark, roles: ['superadmin', 'localadmin', 'historian'] },
       { id: 'metrics', label: 'Métricas e informes', icon: TrendingUp, roles: ['localadmin'] },
       { id: 'planes_local', label: 'Planes', icon: CreditCard, roles: ['localadmin'] },
     ].filter(item => item.roles.includes(userRole));
@@ -2701,17 +2809,18 @@ function App() {
                         <select value={newUserRoleChoice} onChange={e => setNewUserRoleChoice(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', appearance: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
                           {userRole === 'superadmin' && <option value="super" style={{ color: isDark ? '#000' : 'inherit' }}>Super Admin (Control Total)</option>}
                           {userRole === 'superadmin' && <option value="local" style={{ color: isDark ? '#000' : 'inherit' }}>Admin Local (Por Localidad)</option>}
+                          {(userRole === 'superadmin' || userRole === 'localadmin') && <option value="historian" style={{ color: isDark ? '#000' : 'inherit' }}>Historiador (Turismo)</option>}
                           <option value="commerce" style={{ color: isDark ? '#000' : 'inherit' }}>Administrador de Comercio</option>
                         </select>
                       </div>
 
                       <div>
                         <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>
-                          {newUserRoleChoice === 'local' ? 'Vincular a Localidad' : newUserRoleChoice === 'commerce' ? 'Vincular a Comercio' : 'Ámbito'}
+                          {(newUserRoleChoice === 'local' || newUserRoleChoice === 'historian') ? 'Vincular a Localidad' : newUserRoleChoice === 'commerce' ? 'Vincular a Comercio' : 'Acceso Global'}
                         </label>
                         {newUserRoleChoice === 'super' ? (
-                          <input type="text" value="Acceso Global" disabled style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', opacity: 0.7 }} />
-                        ) : newUserRoleChoice === 'local' ? (
+                          <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', borderRadius: '12px', fontSize: '0.85rem' }}>El usuario tendrá acceso completo a todas las ciudades.</div>
+                        ) : (newUserRoleChoice === 'local' || newUserRoleChoice === 'historian') ? (
                           <select value={newUserLocalityId} onChange={e => setNewUserLocalityId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', appearance: 'none', colorScheme: isDark ? 'dark' : 'light' }}>
                             <option value="" style={{ color: isDark ? '#000' : 'inherit' }}>Seleccionar Localidad...</option>
                             {localities.map(loc => (
@@ -2846,6 +2955,76 @@ function App() {
               </section>
             </>
           )}
+
+            {/* TAB: TURISMO */}
+            {activeTab === 'turismo' && (
+              <>
+                <section className="table-section animate-in" style={{ animationDelay: '0.3s' }}>
+                  <div className="table-header">
+                    <h3 className="font-outfit">Gestión Turística</h3>
+                    <button className="btn-add" onClick={() => {
+                      setEditingAtractivoId(null);
+                      setNewAtractivoName('');
+                      setNewAtractivoDesc('');
+                      setNewAtractivoImage(null);
+                      setNewAtractivoPreview(null);
+                      setNewAtractivoMapsUrl('');
+                      setNewAtractivoWhatsapp('');
+                      setShowTurismoModal(true);
+                    }}><MapPin size={18} /> Agregar Atractivo</button>
+                  </div>
+                  <div className="table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Lugar / Atractivo</th>
+                          {userRole === 'superadmin' && <th>Localidad</th>}
+                          <th>Historiador</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {isLoadingAtractivos ? (
+                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Cargando atractivos...</td></tr>
+                        ) : atractivos.filter(a => !assignedLocalityId || a.locality_id === assignedLocalityId).length === 0 ? (
+                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>No hay atractivos registrados.</td></tr>
+                        ) : atractivos.filter(a => !assignedLocalityId || a.locality_id === assignedLocalityId).map(atractivo => (
+                          <tr key={atractivo.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {atractivo.image_url ? (
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundImage: `url(${atractivo.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                                ) : (
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Landmark size={20} color="#6366f1" /></div>
+                                )}
+                                <span style={{ fontWeight: 500 }}>{atractivo.name}</span>
+                              </div>
+                            </td>
+                            {userRole === 'superadmin' && <td><span className="badge" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>{atractivo.localidades?.name || '-'}</span></td>}
+                            <td>{atractivo.historian_name || '-'}</td>
+                            <td>
+                              <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                                <button className="action-btn-small edit" onClick={() => {
+                                  setEditingAtractivoId(atractivo.id);
+                                  setNewAtractivoName(atractivo.name || '');
+                                  setNewAtractivoDesc(atractivo.description || '');
+                                  setNewAtractivoImage(null);
+                                  setNewAtractivoPreview(atractivo.image_url || null);
+                                  setNewAtractivoMapsUrl(atractivo.maps_url || '');
+                                  setNewAtractivoWhatsapp(atractivo.whatsapp || '');
+                                  setShowTurismoModal(true);
+                                }} title="Editar"><Edit3 size={16} /></button>
+                                <button className="action-btn-small delete" onClick={() => handleDeleteAtractivo(atractivo.id)} title="Eliminar"><Trash2 size={16} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </>
+            )}
 
           {/* TAB: CONFIGURACIÓN */}
           {activeTab === 'configuracion' && (
@@ -3051,6 +3230,64 @@ function App() {
               </section>
             </>
           )}
+
+          {/* MODAL TURISMO */}
+            {showTurismoModal && (
+              <div className="modal-overlay" onClick={() => setShowTurismoModal(false)}>
+                <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                  <div className="modal-header">
+                    <h3 className="font-outfit">{editingAtractivoId ? 'Editar Atractivo Turístico' : 'Nuevo Atractivo Turístico'}</h3>
+                    <button className="close-btn" onClick={() => setShowTurismoModal(false)}><X size={24} /></button>
+                  </div>
+                  <div className="modal-body">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Nombre del Lugar / Monumento *</label>
+                        <input type="text" value={newAtractivoName} onChange={e => setNewAtractivoName(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} placeholder="Ej: Plaza Principal" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Reseña Histórica o Descripción</label>
+                        <textarea value={newAtractivoDesc} onChange={e => setNewAtractivoDesc(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', minHeight: '100px', resize: 'vertical' }} placeholder="Escribe aquí la historia o información relevante..."></textarea>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Link de Ubicación (Google Maps)</label>
+                        <input type="text" value={newAtractivoMapsUrl} onChange={e => setNewAtractivoMapsUrl(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} placeholder="Ej: https://goo.gl/maps/... o link completo con @" />
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>Pega el link de Google Maps para que podamos extraer la ubicación exacta (lat/lon).</span>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>WhatsApp del Guía (Opcional)</label>
+                        <input type="text" value={newAtractivoWhatsapp} onChange={e => setNewAtractivoWhatsapp(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} placeholder="Sin el + ni el 9. Ej: 543444123456" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Imagen / Foto del Lugar *</label>
+                        <input type="file" accept="image/*" onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setNewAtractivoImage(e.target.files[0]);
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setNewAtractivoPreview(ev.target.result);
+                            reader.readAsDataURL(e.target.files[0]);
+                          }
+                        }} style={{ display: 'none' }} id="atractivo-img-upload" />
+                        <label htmlFor="atractivo-img-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1'}`, borderRadius: '16px', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc' }}>
+                          {newAtractivoPreview ? (
+                            <img src={newAtractivoPreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', objectFit: 'cover' }} />
+                          ) : (
+                            <>
+                              <Camera size={32} color="#64748b" style={{ marginBottom: '10px' }} />
+                              <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Haz clic para subir una foto representativa</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer" style={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'}`, padding: '20px' }}>
+                    <button className="action-btn" onClick={() => setShowTurismoModal(false)} style={{ background: 'transparent', color: '#64748b' }}>Cancelar</button>
+                    <button className="action-btn primary" onClick={handleSaveAtractivo} disabled={isSavingAtractivo}>{isSavingAtractivo ? 'Guardando...' : 'Guardar Atractivo'}</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {/* MODAL OFERTAS FLASH */}
           {showOfertaModal && (
@@ -3582,9 +3819,13 @@ function App() {
           <h2 className="font-outfit" style={{ marginTop: 0 }}>Lo mejor de <br /> <b>{currentLocalityName}</b> en un solo lugar.</h2>
           <div className="public-search"><Search /><input type="text" placeholder="Buscar comercios o rubros..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
 
-          {(currentLocalityData.weather_link || currentLocalityData.satellite_link || currentLocalityData.pharmacies_link) && (
+          {(currentLocalityData.weather_link || currentLocalityData.satellite_link || currentLocalityData.pharmacies_link || atractivos.some(a => a.locality_id === currentLocalityData.id)) && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-              {currentLocalityData.weather_link && (
+              {atractivos.some(a => a.locality_id === currentLocalityData.id) ? (
+                <button onClick={() => setPublicAtractivoModal(true)} className="action-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <Landmark size={16} /> Guía Turística
+                </button>
+              ) : currentLocalityData.weather_link && (
                 <button onClick={() => { setViewerTitle('El Tiempo'); setViewerUrl(currentLocalityData.weather_link); }} className="action-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
                   <Sun size={16} /> El Tiempo
                 </button>
@@ -4042,6 +4283,52 @@ function App() {
         )}
 
         {/* IN-APP VIEWER MODAL (OVER ALL) */}
+        {/* MODAL GUÍA TURÍSTICA PÚBLICA */}
+        {publicAtractivoModal && (
+          <div className="modal-overlay" onClick={() => setPublicAtractivoModal(false)} style={{ zIndex: 100000 }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', background: isDark ? '#0f172a' : '#fff', borderRadius: '24px' }}>
+              <div className="modal-header" style={{ position: 'sticky', top: 0, background: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', zIndex: 10, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, padding: '20px' }}>
+                <h3 className="font-outfit" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Landmark size={24} color="#6366f1" /> Guía Turística</h3>
+                <button className="close-btn" onClick={() => setPublicAtractivoModal(false)}><X size={24} /></button>
+              </div>
+              <div className="modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                {atractivos.filter(a => a.locality_id === currentLocalityData?.id).map(atractivo => (
+                  <div key={atractivo.id} style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '20px', overflow: 'hidden', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
+                    {atractivo.image_url && (
+                      <div style={{ width: '100%', height: '250px', backgroundImage: `url(${atractivo.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                    )}
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.4rem', color: isDark ? '#fff' : '#0f172a' }}>{atractivo.name}</h3>
+                      {userLocation && atractivo.latitud && atractivo.longitud && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6366f1', fontWeight: 500, fontSize: '0.9rem' }}>
+                          <Navigation size={16} /> A {getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, atractivo.latitud, atractivo.longitud) < 1 ? `${Math.round(getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, atractivo.latitud, atractivo.longitud) * 1000)} m` : `${getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, atractivo.latitud, atractivo.longitud).toFixed(1)} km`} de ti
+                        </div>
+                      )}
+                      {atractivo.description && (
+                        <p style={{ margin: 0, color: '#64748b', lineHeight: '1.6', fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>{atractivo.description}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                        {atractivo.maps_url && (
+                          <button className="action-btn primary" onClick={() => window.open(atractivo.maps_url, '_blank')} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}><MapPin size={18} /> Cómo llegar</button>
+                        )}
+                        {atractivo.whatsapp && (
+                          <button className="action-btn" onClick={() => window.open(`https://wa.me/549${atractivo.whatsapp}`, '_blank')} style={{ flex: 1, display: 'flex', justifyContent: 'center', background: '#25D366', color: '#fff', border: 'none' }}><MessageCircle size={18} /> Guía Turístico</button>
+                        )}
+                        <button className="action-btn" onClick={() => handleShare({ name: atractivo.name, id: atractivo.id })} style={{ display: 'flex', justifyContent: 'center', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} title="Compartir"><Share2 size={18} /></button>
+                      </div>
+                      {atractivo.historian_name && (
+                        <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, paddingTop: '15px' }}>
+                          Reseña histórica por: Prof. {atractivo.historian_name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {viewerUrl && (() => {
           // Sanitización agresiva para forzar HTTPS y evitar Mixed Content en Vercel
           let sanitized = viewerUrl.trim()
