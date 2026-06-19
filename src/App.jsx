@@ -121,6 +121,7 @@ function App() {
   
   const [userLocation, setUserLocation] = useState(null);
   const [locationRequested, setLocationRequested] = useState(false);
+  const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
 
   useEffect(() => {
     if ((searchQuery || selectedPublicRubroId !== null || publicAtractivoModal) && !locationRequested) {
@@ -304,7 +305,6 @@ function App() {
   const [newAtractivoLocalityId, setNewAtractivoLocalityId] = useState('');
   const [editingAtractivoId, setEditingAtractivoId] = useState(null);
   const [isSavingAtractivo, setIsSavingAtractivo] = useState(false);
-  const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
 
   const [analyticsStats, setAnalyticsStats] = useState({ opens: 0, installs: 0 });
 
