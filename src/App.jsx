@@ -3588,11 +3588,13 @@ function App() {
     const currentLocalityName = currentLocalityData.name || 'Selecciona tu localidad';
     const currentLocalityProv = currentLocalityData.province || '';
 
-    const handleShare = async (biz) => {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?comercio=${biz.id}`;
+    const handleShare = async (biz, isAtractivo = false) => {
+      const typeParam = isAtractivo ? 'atractivo' : 'comercio';
+      const shareUrl = `${window.location.origin}${window.location.pathname}?${typeParam}=${biz.id}`;
+      const textIntro = isAtractivo ? `¡Mirá este lugar en D'Compras! ` : `¡Mirá este comercio en D'Compras! `;
       const shareData = {
         title: biz.name,
-        text: `¡Mirá este comercio en D'Compras! ${biz.name}`,
+        text: `${textIntro}${biz.name}`,
         url: shareUrl
       };
       if (navigator.share) {
@@ -4333,7 +4335,7 @@ function App() {
                         {atractivo.whatsapp && (
                           <button className="action-btn" onClick={() => window.open(`https://wa.me/549${atractivo.whatsapp}`, '_blank')} style={{ flex: 1, display: 'flex', justifyContent: 'center', background: '#25D366', color: '#fff', border: 'none' }}><MessageCircle size={18} /> Guía Turístico</button>
                         )}
-                        <button className="action-btn" onClick={() => handleShare({ name: atractivo.name, id: atractivo.id })} style={{ display: 'flex', justifyContent: 'center', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} title="Compartir"><Share2 size={18} /></button>
+                        <button className="action-btn" onClick={() => handleShare({ name: atractivo.name, id: atractivo.id }, true)} style={{ display: 'flex', justifyContent: 'center', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} title="Compartir"><Share2 size={18} /></button>
                       </div>
                       {atractivo.historian_name && (
                         <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, paddingTop: '15px' }}>
