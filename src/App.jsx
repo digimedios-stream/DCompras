@@ -301,6 +301,7 @@ function App() {
   const [newAtractivoPreview, setNewAtractivoPreview] = useState(null);
   const [newAtractivoMapsUrl, setNewAtractivoMapsUrl] = useState('');
   const [newAtractivoWhatsapp, setNewAtractivoWhatsapp] = useState('');
+  const [newAtractivoLocalityId, setNewAtractivoLocalityId] = useState('');
   const [editingAtractivoId, setEditingAtractivoId] = useState(null);
   const [isSavingAtractivo, setIsSavingAtractivo] = useState(false);
   const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
@@ -685,6 +686,10 @@ function App() {
       alert("El nombre es obligatorio.");
       return;
     }
+    if (userRole === 'superadmin' && !newAtractivoLocalityId) {
+      alert("Debes seleccionar una localidad para el atractivo.");
+      return;
+    }
     setIsSavingAtractivo(true);
     try {
       let imageUrl = newAtractivoPreview;
@@ -709,7 +714,7 @@ function App() {
       }
 
       const payload = {
-        locality_id: assignedLocalityId,
+        locality_id: userRole === 'superadmin' ? newAtractivoLocalityId : assignedLocalityId,
         historian_id: session?.user?.id,
         historian_name: session?.user?.user_metadata?.full_name || 'Historiador',
         name: newAtractivoName,
@@ -738,6 +743,7 @@ function App() {
       setNewAtractivoPreview(null);
       setNewAtractivoMapsUrl('');
       setNewAtractivoWhatsapp('');
+      setNewAtractivoLocalityId('');
       fetchAtractivos();
       alert('Atractivo turístico guardado correctamente.');
     } catch (err) {
@@ -2970,6 +2976,7 @@ function App() {
                       setNewAtractivoPreview(null);
                       setNewAtractivoMapsUrl('');
                       setNewAtractivoWhatsapp('');
+                      setNewAtractivoLocalityId('');
                       setShowTurismoModal(true);
                     }}><MapPin size={18} /> Agregar Atractivo</button>
                   </div>
@@ -3012,6 +3019,7 @@ function App() {
                                   setNewAtractivoPreview(atractivo.image_url || null);
                                   setNewAtractivoMapsUrl(atractivo.maps_url || '');
                                   setNewAtractivoWhatsapp(atractivo.whatsapp || '');
+                                  setNewAtractivoLocalityId(atractivo.locality_id || '');
                                   setShowTurismoModal(true);
                                 }} title="Editar"><Edit3 size={16} /></button>
                                 <button className="action-btn-small delete" onClick={() => handleDeleteAtractivo(atractivo.id)} title="Eliminar"><Trash2 size={16} /></button>
@@ -3241,6 +3249,17 @@ function App() {
                   </div>
                   <div className="modal-body">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      {userRole === 'superadmin' && (
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Localidad *</label>
+                          <select value={newAtractivoLocalityId} onChange={e => setNewAtractivoLocalityId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }}>
+                            <option value="">Selecciona una localidad...</option>
+                            {localities.map(loc => (
+                              <option key={loc.id} value={loc.id} style={{ color: isDark ? '#000' : 'inherit' }}>{loc.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div>
                         <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Nombre del Lugar / Monumento *</label>
                         <input type="text" value={newAtractivoName} onChange={e => setNewAtractivoName(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} placeholder="Ej: Plaza Principal" />
