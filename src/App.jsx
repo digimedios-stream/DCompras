@@ -3241,7 +3241,7 @@ function App() {
 
           {/* MODAL TURISMO */}
             {showTurismoModal && (
-              <div className="modal-overlay" onClick={() => setShowTurismoModal(false)}>
+              <div className="gallery-modal" onClick={() => setShowTurismoModal(false)} style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
                   <div className="modal-header">
                     <h3 className="font-outfit">{editingAtractivoId ? 'Editar Atractivo Turístico' : 'Nuevo Atractivo Turístico'}</h3>
@@ -4304,7 +4304,7 @@ function App() {
         {/* IN-APP VIEWER MODAL (OVER ALL) */}
         {/* MODAL GUÍA TURÍSTICA PÚBLICA */}
         {publicAtractivoModal && (
-          <div className="modal-overlay" onClick={() => setPublicAtractivoModal(false)} style={{ zIndex: 100000 }}>
+          <div className="gallery-modal" onClick={() => setPublicAtractivoModal(false)} style={{ zIndex: 100000, justifyContent: 'center', alignItems: 'center' }}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', background: isDark ? '#0f172a' : '#fff', borderRadius: '24px' }}>
               <div className="modal-header" style={{ position: 'sticky', top: 0, background: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', zIndex: 10, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, padding: '20px' }}>
                 <h3 className="font-outfit" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Landmark size={24} color="#6366f1" /> Guía Turística</h3>
