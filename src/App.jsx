@@ -3014,9 +3014,9 @@ function App() {
                       <tbody>
                         {isLoadingAtractivos ? (
                           <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Cargando atractivos...</td></tr>
-                        ) : atractivos.filter(a => !assignedLocalityId || a.locality_id === assignedLocalityId).length === 0 ? (
+                        ) : atractivos.filter(a => userRole === 'superadmin' ? true : userRole === 'historian' ? a.historian_id === session?.user?.id : a.locality_id === assignedLocalityId).length === 0 ? (
                           <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>No hay atractivos registrados.</td></tr>
-                        ) : atractivos.filter(a => !assignedLocalityId || a.locality_id === assignedLocalityId).map(atractivo => (
+                        ) : atractivos.filter(a => userRole === 'superadmin' ? true : userRole === 'historian' ? a.historian_id === session?.user?.id : a.locality_id === assignedLocalityId).map(atractivo => (
                           <tr key={atractivo.id}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
