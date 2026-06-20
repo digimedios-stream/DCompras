@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
+import html2canvas from 'html2canvas';
 import {
   LayoutDashboard, MapPin, Tags, Store, Users, Bell, Search, Plus, TrendingUp,
   ArrowUpRight, Settings, LogOut, LogIn, Sun, Moon, ShieldCheck, Building, Home, Heart,
   MessageCircle, Navigation, Utensils, Smartphone, Stethoscope, ShoppingBag, Star,
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
-  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark
+  Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark,
+  Type, Paintbrush, Upload
 } from 'lucide-react';
 
 const removeAccents = (str) => {
@@ -292,6 +294,260 @@ function App() {
     const stored = localStorage.getItem('dcompras_seen_ofertas');
     return stored ? JSON.parse(stored) : [];
   });
+
+  // === EDITOR DE DISEÑO PARA OFERTAS ===
+  const [ofertaMode, setOfertaMode] = useState('upload'); // 'upload' | 'design'
+  const [editorBg, setEditorBg] = useState('#1e293b');
+  const [editorBgType, setEditorBgType] = useState('solid'); // 'solid' | 'gradient'
+  const [editorTexts, setEditorTexts] = useState([]);
+  const [editorImage, setEditorImage] = useState(null); // { src, x, y, width, height }
+  const [editorActiveTool, setEditorActiveTool] = useState(null); // 'bg' | 'text' | 'image'
+  const [editorSelectedTextId, setEditorSelectedTextId] = useState(null);
+  const [editorSelectedElement, setEditorSelectedElement] = useState(null); // 'image' | textId
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const editorCanvasRef = useRef(null);
+  const editorDragRef = useRef({ active: false, type: null, id: null, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const editorResizeRef = useRef({ active: false, startX: 0, startY: 0, origW: 0, origH: 0 });
+
+  const EDITOR_COLORS = [
+    '#1e293b', '#0f172a', '#18181b', '#1c1917',
+    '#7c3aed', '#6366f1', '#3b82f6', '#0ea5e9',
+    '#10b981', '#22c55e', '#eab308', '#f59e0b',
+    '#ef4444', '#f43f5e', '#ec4899', '#d946ef',
+    '#ffffff', '#f8fafc',
+  ];
+
+  const EDITOR_GRADIENTS = [
+    'linear-gradient(135deg, #667eea, #764ba2)',
+    'linear-gradient(135deg, #f093fb, #f5576c)',
+    'linear-gradient(135deg, #4facfe, #00f2fe)',
+    'linear-gradient(135deg, #43e97b, #38f9d7)',
+    'linear-gradient(135deg, #fa709a, #fee140)',
+    'linear-gradient(135deg, #a18cd1, #fbc2eb)',
+    'linear-gradient(135deg, #fccb90, #d57eeb)',
+    'linear-gradient(135deg, #0c3483, #a2b6df)',
+    'linear-gradient(135deg, #ff9a9e, #fad0c4)',
+    'linear-gradient(135deg, #f6d365, #fda085)',
+    'linear-gradient(135deg, #89f7fe, #66a6ff)',
+    'linear-gradient(135deg, #fddb92, #d1fdff)',
+  ];
+
+  const EDITOR_FONTS = [
+    { name: 'Inter', family: "'Inter', sans-serif", label: 'Inter (Moderna)' },
+    { name: 'Outfit', family: "'Outfit', sans-serif", label: 'Outfit (Elegante)' },
+    { name: 'Poppins', family: "'Poppins', sans-serif", label: 'Poppins (Redondeada)' },
+    { name: 'Bebas Neue', family: "'Bebas Neue', sans-serif", label: 'Bebas Neue (Impacto)' },
+    { name: 'Permanent Marker', family: "'Permanent Marker', cursive", label: 'Marker (Informal)' },
+    { name: 'Dancing Script', family: "'Dancing Script', cursive", label: 'Dancing (Cursiva)' },
+  ];
+
+  const TEXT_SIZES = [
+    { label: 'S', value: 16 },
+    { label: 'M', value: 24 },
+    { label: 'L', value: 36 },
+    { label: 'XL', value: 48 },
+  ];
+
+  const handleEditorAddText = () => {
+    if (editorTexts.length >= 4) {
+      alert('Máximo 4 textos permitidos.');
+      return;
+    }
+    const newText = {
+      id: Date.now().toString(),
+      content: 'Tu texto aquí',
+      x: 50 - Math.random() * 10,
+      y: 40 + editorTexts.length * 15,
+      fontSize: 24,
+      fontFamily: "'Poppins', sans-serif",
+      fontName: 'Poppins',
+      color: '#ffffff',
+      bold: true,
+    };
+    setEditorTexts(prev => [...prev, newText]);
+    setEditorSelectedTextId(newText.id);
+    setEditorSelectedElement(newText.id);
+    setEditorActiveTool('text');
+  };
+
+  const handleEditorUpdateText = (id, updates) => {
+    setEditorTexts(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const handleEditorDeleteText = (id) => {
+    setEditorTexts(prev => prev.filter(t => t.id !== id));
+    if (editorSelectedTextId === id) {
+      setEditorSelectedTextId(null);
+      setEditorSelectedElement(null);
+    }
+  };
+
+  const handleEditorImageUpload = (file) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        // Scale image to fit in canvas (max 60% of canvas width)
+        const maxW = 60;
+        const ratio = img.height / img.width;
+        const w = Math.min(maxW, 60);
+        const h = w * ratio;
+        setEditorImage({
+          src: ev.target.result,
+          x: 50 - w / 2,
+          y: 50 - h / 2,
+          width: w,
+          height: h,
+        });
+        setEditorSelectedElement('image');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Drag handling for text and image elements
+  const handleEditorPointerDown = (e, type, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const canvas = editorCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    if (type === 'text') {
+      const text = editorTexts.find(t => t.id === id);
+      if (!text) return;
+      editorDragRef.current = { active: true, type: 'text', id, startX: x, startY: y, origX: text.x, origY: text.y };
+      setEditorSelectedTextId(id);
+      setEditorSelectedElement(id);
+    } else if (type === 'image') {
+      if (!editorImage) return;
+      editorDragRef.current = { active: true, type: 'image', id: null, startX: x, startY: y, origX: editorImage.x, origY: editorImage.y };
+      setEditorSelectedElement('image');
+      setEditorSelectedTextId(null);
+    }
+  };
+
+  const handleEditorPointerMove = useCallback((e) => {
+    const drag = editorDragRef.current;
+    const resize = editorResizeRef.current;
+    const canvas = editorCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    if (drag.active) {
+      const dx = x - drag.startX;
+      const dy = y - drag.startY;
+      const newX = Math.max(0, Math.min(90, drag.origX + dx));
+      const newY = Math.max(0, Math.min(90, drag.origY + dy));
+
+      if (drag.type === 'text') {
+        setEditorTexts(prev => prev.map(t => t.id === drag.id ? { ...t, x: newX, y: newY } : t));
+      } else if (drag.type === 'image') {
+        setEditorImage(prev => prev ? { ...prev, x: newX, y: newY } : null);
+      }
+    }
+
+    if (resize.active && editorImage) {
+      const dx = x - resize.startX;
+      const dy = y - resize.startY;
+      const delta = Math.max(dx, dy);
+      const newW = Math.max(10, Math.min(95, resize.origW + delta));
+      const ratio = resize.origH / resize.origW;
+      setEditorImage(prev => prev ? { ...prev, width: newW, height: newW * ratio } : null);
+    }
+  }, [editorImage]);
+
+  const handleEditorPointerUp = useCallback(() => {
+    editorDragRef.current = { ...editorDragRef.current, active: false };
+    editorResizeRef.current = { ...editorResizeRef.current, active: false };
+  }, []);
+
+  const handleEditorResizeStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!editorImage) return;
+    const canvas = editorCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    editorResizeRef.current = { active: true, startX: x, startY: y, origW: editorImage.width, origH: editorImage.height };
+  };
+
+  // Attach global listeners for drag
+  useEffect(() => {
+    const moveHandler = (e) => handleEditorPointerMove(e);
+    const upHandler = () => handleEditorPointerUp();
+    window.addEventListener('mousemove', moveHandler);
+    window.addEventListener('mouseup', upHandler);
+    window.addEventListener('touchmove', moveHandler, { passive: false });
+    window.addEventListener('touchend', upHandler);
+    return () => {
+      window.removeEventListener('mousemove', moveHandler);
+      window.removeEventListener('mouseup', upHandler);
+      window.removeEventListener('touchmove', moveHandler);
+      window.removeEventListener('touchend', upHandler);
+    };
+  }, [handleEditorPointerMove, handleEditorPointerUp]);
+
+  const handleGenerateDesignImage = async () => {
+    const canvas = editorCanvasRef.current;
+    if (!canvas) return;
+    setIsGeneratingImage(true);
+    // Deselect all elements for clean screenshot
+    setEditorSelectedTextId(null);
+    setEditorSelectedElement(null);
+
+    // Wait for re-render
+    await new Promise(r => setTimeout(r, 100));
+
+    try {
+      const result = await html2canvas(canvas, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      result.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `oferta-design-${Date.now()}.png`, { type: 'image/png' });
+          setNewOfertaImage(file);
+          setNewOfertaPreview(URL.createObjectURL(blob));
+          setOfertaMode('upload'); // Switch back to upload tab to show preview
+        }
+      }, 'image/png', 0.95);
+    } catch (err) {
+      console.error('Error generando imagen:', err);
+      alert('Error al generar la imagen. Intenta de nuevo.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const resetEditor = () => {
+    setOfertaMode('upload');
+    setEditorBg('#1e293b');
+    setEditorBgType('solid');
+    setEditorTexts([]);
+    setEditorImage(null);
+    setEditorActiveTool(null);
+    setEditorSelectedTextId(null);
+    setEditorSelectedElement(null);
+    setIsGeneratingImage(false);
+  };
 
   // Estados para Turismo
   const [atractivos, setAtractivos] = useState([]);
@@ -2909,6 +3165,7 @@ function App() {
                       setNewOfertaImage(null);
                       setNewOfertaPreview(null);
                       setNewOfertaDuration('1');
+                      resetEditor();
                       setShowOfertaModal(true);
                     }}>
                       <Plus size={18} /> Publicar Oferta
@@ -3332,10 +3589,20 @@ function App() {
           {/* MODAL OFERTAS FLASH */}
           {showOfertaModal && (
             <div className="gallery-modal" style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '28px', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '92vh', overflowY: 'auto', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
                 <div className="gallery-header" style={{ marginBottom: '20px' }}>
                   <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a' }}>Publicar Oferta Flash</h3>
-                  <div className="close-gallery" onClick={() => setShowOfertaModal(false)}><X size={24} /></div>
+                  <div className="close-gallery" onClick={() => { setShowOfertaModal(false); resetEditor(); }}><X size={24} /></div>
+                </div>
+
+                {/* TABS: Subir Imagen / Crear Diseño */}
+                <div className="offer-editor-mode-tabs">
+                  <button className={`offer-editor-mode-tab ${ofertaMode === 'upload' ? 'active' : ''}`} onClick={() => setOfertaMode('upload')}>
+                    <Upload size={16} /> Subir Imagen
+                  </button>
+                  <button className={`offer-editor-mode-tab ${ofertaMode === 'design' ? 'active' : ''}`} onClick={() => setOfertaMode('design')}>
+                    <Paintbrush size={16} /> Crear Diseño
+                  </button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -3352,29 +3619,250 @@ function App() {
                     </div>
                   )}
 
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Imagen de la Oferta</label>
-                    <div style={{ width: '100%', height: '200px', borderRadius: '16px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative' }} onClick={() => document.getElementById('oferta-upload').click()}>
-                      {newOfertaPreview ? (
-                        <img src={newOfertaPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <>
-                          <Camera size={32} color="#6366f1" style={{ marginBottom: '10px' }} />
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Click para subir imagen</span>
-                        </>
-                      )}
-                      <input id="oferta-upload" type="file" accept="image/*" hidden onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          setNewOfertaImage(file);
-                          const reader = new FileReader();
-                          reader.onloadend = () => setNewOfertaPreview(reader.result);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
+                  {/* ===== MODO SUBIR IMAGEN (Original) ===== */}
+                  {ofertaMode === 'upload' && (
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Imagen de la Oferta</label>
+                      <div style={{ width: '100%', height: '200px', borderRadius: '16px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative' }} onClick={() => document.getElementById('oferta-upload').click()}>
+                        {newOfertaPreview ? (
+                          <img src={newOfertaPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <>
+                            <Camera size={32} color="#6366f1" style={{ marginBottom: '10px' }} />
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Click para subir imagen</span>
+                          </>
+                        )}
+                        <input id="oferta-upload" type="file" accept="image/*" hidden onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setNewOfertaImage(file);
+                            const reader = new FileReader();
+                            reader.onloadend = () => setNewOfertaPreview(reader.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }} />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* ===== MODO DISEÑO (Editor Visual) ===== */}
+                  {ofertaMode === 'design' && (
+                    <div className="offer-editor-container">
+                      {/* Canvas */}
+                      <div className="offer-editor-canvas-wrapper">
+                        <div
+                          ref={editorCanvasRef}
+                          className="offer-editor-canvas"
+                          style={{ background: editorBgType === 'solid' ? editorBg : editorBg }}
+                          onClick={() => { setEditorSelectedTextId(null); setEditorSelectedElement(null); }}
+                        >
+                          {/* Empty state hint */}
+                          {editorTexts.length === 0 && !editorImage && (
+                            <div className="offer-editor-empty">
+                              <Paintbrush size={40} color={isDark ? '#fff' : '#64748b'} />
+                              <span style={{ color: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>Usá las herramientas de abajo para crear tu diseño</span>
+                            </div>
+                          )}
+
+                          {/* Render image element */}
+                          {editorImage && (
+                            <div
+                              className={`offer-editor-image-element ${editorSelectedElement === 'image' ? 'selected' : ''}`}
+                              style={{
+                                left: `${editorImage.x}%`,
+                                top: `${editorImage.y}%`,
+                                width: `${editorImage.width}%`,
+                                height: `${editorImage.height}%`,
+                              }}
+                              onMouseDown={(e) => handleEditorPointerDown(e, 'image', null)}
+                              onTouchStart={(e) => handleEditorPointerDown(e, 'image', null)}
+                              onClick={(e) => { e.stopPropagation(); setEditorSelectedElement('image'); setEditorSelectedTextId(null); }}
+                            >
+                              <img src={editorImage.src} alt="Elemento" />
+                              {editorSelectedElement === 'image' && (
+                                <>
+                                  <div
+                                    className="resize-handle"
+                                    onMouseDown={handleEditorResizeStart}
+                                    onTouchStart={handleEditorResizeStart}
+                                  />
+                                  <div className="delete-img-btn" onClick={(e) => { e.stopPropagation(); setEditorImage(null); setEditorSelectedElement(null); }}>
+                                    <X size={12} />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Render text elements */}
+                          {editorTexts.map(t => (
+                            <div
+                              key={t.id}
+                              className={`offer-editor-text-element ${editorSelectedTextId === t.id ? 'selected' : ''}`}
+                              style={{
+                                left: `${t.x}%`,
+                                top: `${t.y}%`,
+                                fontSize: `${t.fontSize}px`,
+                                fontFamily: t.fontFamily,
+                                color: t.color,
+                                fontWeight: t.bold ? 800 : 400,
+                                textShadow: '1px 1px 4px rgba(0,0,0,0.5)',
+                              }}
+                              onMouseDown={(e) => handleEditorPointerDown(e, 'text', t.id)}
+                              onTouchStart={(e) => handleEditorPointerDown(e, 'text', t.id)}
+                              onClick={(e) => { e.stopPropagation(); setEditorSelectedTextId(t.id); setEditorSelectedElement(t.id); }}
+                            >
+                              {t.content}
+                              {editorSelectedTextId === t.id && (
+                                <div className="delete-text-btn" onClick={(e) => { e.stopPropagation(); handleEditorDeleteText(t.id); }}>
+                                  <X size={10} />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Toolbar */}
+                      <div className="offer-editor-toolbar">
+                        <button className={`offer-editor-tool-btn ${editorActiveTool === 'bg' ? 'active' : ''}`} onClick={() => setEditorActiveTool(editorActiveTool === 'bg' ? null : 'bg')}>
+                          <Palette size={20} /> Fondo
+                        </button>
+                        <button className={`offer-editor-tool-btn ${editorActiveTool === 'text' ? 'active' : ''}`} onClick={() => setEditorActiveTool(editorActiveTool === 'text' ? null : 'text')}>
+                          <Type size={20} /> Texto
+                        </button>
+                        <button className={`offer-editor-tool-btn ${editorActiveTool === 'image' ? 'active' : ''}`} onClick={() => setEditorActiveTool(editorActiveTool === 'image' ? null : 'image')}>
+                          <Image size={20} /> Imagen
+                        </button>
+                      </div>
+
+                      {/* Panel: FONDO */}
+                      {editorActiveTool === 'bg' && (
+                        <div className="offer-editor-panel">
+                          <div className="offer-editor-panel-title">Colores Sólidos</div>
+                          <div className="offer-editor-color-grid">
+                            {EDITOR_COLORS.map((c, i) => (
+                              <div
+                                key={i}
+                                className={`offer-editor-color-swatch ${editorBgType === 'solid' && editorBg === c ? 'active' : ''}`}
+                                style={{ background: c, border: c === '#ffffff' || c === '#f8fafc' ? '2px solid #e2e8f0' : undefined }}
+                                onClick={() => { setEditorBg(c); setEditorBgType('solid'); }}
+                              />
+                            ))}
+                          </div>
+                          <div className="offer-editor-section-divider" />
+                          <div className="offer-editor-panel-title">Gradientes</div>
+                          <div className="offer-editor-gradient-grid">
+                            {EDITOR_GRADIENTS.map((g, i) => (
+                              <div
+                                key={i}
+                                className={`offer-editor-gradient-swatch ${editorBgType === 'gradient' && editorBg === g ? 'active' : ''}`}
+                                style={{ background: g }}
+                                onClick={() => { setEditorBg(g); setEditorBgType('gradient'); }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Panel: TEXTO */}
+                      {editorActiveTool === 'text' && (
+                        <div className="offer-editor-panel">
+                          <button onClick={handleEditorAddText} style={{ width: '100%', padding: '10px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#818cf8', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: "'Inter', sans-serif", marginBottom: '12px' }}>
+                            <Plus size={16} /> Agregar Texto ({editorTexts.length}/4)
+                          </button>
+
+                          {editorSelectedTextId && (() => {
+                            const selText = editorTexts.find(t => t.id === editorSelectedTextId);
+                            if (!selText) return null;
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {/* Text input */}
+                                <div className="offer-editor-text-edit-row">
+                                  <input
+                                    type="text"
+                                    value={selText.content}
+                                    onChange={(e) => handleEditorUpdateText(selText.id, { content: e.target.value })}
+                                    placeholder="Escribe tu texto..."
+                                  />
+                                  <button
+                                    className={`offer-editor-bold-toggle ${selText.bold ? 'active' : ''}`}
+                                    onClick={() => handleEditorUpdateText(selText.id, { bold: !selText.bold })}
+                                  >
+                                    B
+                                  </button>
+                                </div>
+
+                                {/* Size */}
+                                <div>
+                                  <div className="offer-editor-panel-title">Tamaño</div>
+                                  <div className="offer-editor-size-btns">
+                                    {TEXT_SIZES.map(s => (
+                                      <button key={s.label} className={`offer-editor-size-btn ${selText.fontSize === s.value ? 'active' : ''}`} onClick={() => handleEditorUpdateText(selText.id, { fontSize: s.value })}>
+                                        {s.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Font */}
+                                <div>
+                                  <div className="offer-editor-panel-title">Fuente</div>
+                                  <div className="offer-editor-font-list">
+                                    {EDITOR_FONTS.map(f => (
+                                      <div key={f.name} className={`offer-editor-font-item ${selText.fontName === f.name ? 'active' : ''}`} onClick={() => handleEditorUpdateText(selText.id, { fontFamily: f.family, fontName: f.name })} style={{ fontFamily: f.family }}>
+                                        {f.label}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Color */}
+                                <div>
+                                  <div className="offer-editor-panel-title">Color del Texto</div>
+                                  <div className="offer-editor-color-grid">
+                                    {['#ffffff', '#f8fafc', '#0f172a', '#1e293b', '#ef4444', '#f43f5e', '#ec4899', '#d946ef', '#6366f1', '#3b82f6', '#10b981', '#eab308', '#f59e0b', '#22d3ee', '#a78bfa', '#fb923c', '#fbbf24', '#34d399'].map((c, i) => (
+                                      <div key={i} className={`offer-editor-color-swatch ${selText.color === c ? 'active' : ''}`} style={{ background: c, border: (c === '#ffffff' || c === '#f8fafc') ? '2px solid #e2e8f0' : undefined }} onClick={() => handleEditorUpdateText(selText.id, { color: c })} />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {!editorSelectedTextId && editorTexts.length > 0 && (
+                            <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', margin: '8px 0 0' }}>Toca un texto en el lienzo para editarlo</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Panel: IMAGEN */}
+                      {editorActiveTool === 'image' && (
+                        <div className="offer-editor-panel">
+                          <div className="offer-editor-panel-title">Imagen del Producto</div>
+                          <input id="editor-img-upload" type="file" accept="image/*" hidden onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) handleEditorImageUpload(e.target.files[0]);
+                          }} />
+                          <label htmlFor="editor-img-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1'}`, borderRadius: '14px', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', transition: 'all 0.2s ease' }}>
+                            <Camera size={28} color="#6366f1" style={{ marginBottom: '8px' }} />
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>{editorImage ? 'Reemplazar imagen' : 'Subir imagen'}</span>
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>Podés moverla y redimensionarla en el lienzo</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Generate Button */}
+                      <button className="offer-editor-generate-btn" onClick={handleGenerateDesignImage} disabled={isGeneratingImage}>
+                        {isGeneratingImage ? (
+                          <>Generando imagen...</>
+                        ) : (
+                          <><CheckCircle size={18} /> Usar este diseño</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Descripción y duración (siempre visible) */}
                   <div>
                     <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Descripción Corta</label>
                     <textarea value={newOfertaDesc} onChange={e => setNewOfertaDesc(e.target.value)} placeholder="Ej: 2x1 en hamburguesas solo por hoy..." style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', height: '80px', resize: 'none' }} />
