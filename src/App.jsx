@@ -660,6 +660,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Refrescar datos al cambiar de pestaña para asegurar que no haya información desactualizada
+    if (activeTab === 'localidades' && userRole === 'superadmin') {
+      fetchLocalities();
+      fetchUsersList();
+    } else if (activeTab === 'comercios') {
+      fetchComercios();
+      fetchRubros();
+      fetchLocalities();
+    } else if (activeTab === 'rubros') {
+      fetchRubros();
+      fetchComercios();
+    } else if (activeTab === 'pagos') {
+      fetchPagos();
+      fetchPlanes();
+      fetchComercios();
+    } else if (activeTab === 'dashboard') {
+      fetchComercios();
+      fetchLocalities();
+      fetchUsersList();
+    } else if (activeTab === 'usuarios') {
+      fetchUsersList();
+      fetchLocalities();
+    } else if (activeTab === 'ofertas') {
+      fetchOfertas();
+      fetchComercios();
+    } else if (activeTab === 'turismo') {
+      fetchAtractivos();
+      fetchLocalities();
+    }
+  }, [activeTab, userRole]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     
     // Deep linking para Comercios
@@ -2040,7 +2072,7 @@ function App() {
                           <tr key={item.id || i}>
                             <td style={{ fontWeight: 600, color: isDark ? '#fff' : '#0f172a' }}>{item.name}</td>
                             <td><span className={`badge ${item.badge_color || 'badge-indigo'}`}>Muestra Visual</span></td>
-                            <td><span style={{ color: '#94a3b8' }}>0 comercios</span></td>
+                            <td><span style={{ color: '#94a3b8' }}>{comercios.filter(c => c.rubro_id === item.id).length} comercios</span></td>
                             <td>
                               <div className={`status ${item.status === 'active' ? 'active' : 'pending'}`}>
                                 <span className={`status-dot ${item.status === 'active' ? 'active' : 'pending'}`}></span>
@@ -2403,19 +2435,21 @@ function App() {
                               </div>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTab('pagos');
-                              setNewPagoCommerceId(editingCommerceId);
-                              setPaymentTypeChoice('comercio');
-                              setShowCommerceModal(false);
-                              setTimeout(() => setShowPagoModal(true), 150);
-                            }}
-                            style={{ padding: '10px 18px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}
-                          >
-                            <Plus size={16} /> Asignar / Renovar
-                          </button>
+                          {userRole !== 'commerce' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTab('pagos');
+                                setNewPagoCommerceId(editingCommerceId);
+                                setPaymentTypeChoice('comercio');
+                                setShowCommerceModal(false);
+                                setTimeout(() => setShowPagoModal(true), 150);
+                              }}
+                              style={{ padding: '10px 18px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}
+                            >
+                              <Plus size={16} /> Asignar / Renovar
+                            </button>
+                          )}
                         </div>
                       )}
 
@@ -2461,9 +2495,9 @@ function App() {
           {activeTab === 'localidades' && userRole === 'superadmin' && (
             <>
               <div className="stats-grid">
-                <div className="stat-card animate-in"><div className="stat-card-header"><div className="stat-icon emerald"><Map size={22} /></div></div><div className="stat-label">Activas</div><div className="stat-value">12</div></div>
-                <div className="stat-card animate-in" style={{ animationDelay: '0.1s' }}><div className="stat-card-header"><div className="stat-icon amber"><Building size={22} /></div></div><div className="stat-label">Pendientes</div><div className="stat-value">3</div></div>
-                <div className="stat-card animate-in" style={{ animationDelay: '0.2s' }}><div className="stat-card-header"><div className="stat-icon pink"><Users size={22} /></div></div><div className="stat-label">Encargados</div><div className="stat-value">14</div></div>
+                <div className="stat-card animate-in"><div className="stat-card-header"><div className="stat-icon emerald"><Map size={22} /></div></div><div className="stat-label">Activas</div><div className="stat-value">{localities.filter(l => l.status === 'active' || !l.status).length}</div></div>
+                <div className="stat-card animate-in" style={{ animationDelay: '0.1s' }}><div className="stat-card-header"><div className="stat-icon amber"><Building size={22} /></div></div><div className="stat-label">Pendientes</div><div className="stat-value">{localities.filter(l => l.status && l.status !== 'active').length}</div></div>
+                <div className="stat-card animate-in" style={{ animationDelay: '0.2s' }}><div className="stat-card-header"><div className="stat-icon pink"><Users size={22} /></div></div><div className="stat-label">Encargados</div><div className="stat-value">{usersList.filter(u => u.role === 'Admin Local').length}</div></div>
               </div>
 
               <section className="table-section animate-in" style={{ animationDelay: '0.3s' }}>
