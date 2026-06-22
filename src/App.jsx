@@ -214,6 +214,8 @@ function App() {
   const [newComMainImageFile, setNewComMainImageFile] = useState(null);
   const [newComMainImagePreview, setNewComMainImagePreview] = useState(null);
   const [editingCommerceId, setEditingCommerceId] = useState(null);
+  const [newComKeywords, setNewComKeywords] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [galleryItems, setGalleryItems] = useState([]);
   const [newComHours, setNewComHours] = useState({
     mon: { open: '08:00', close: '12:00', open2: '16:00', close2: '20:00', active: true },
@@ -1460,7 +1462,8 @@ function App() {
       instagram_url: newComInstagram,
       facebook_url: newComFacebook,
       website_url: newComWebsite,
-      has_offers_access: newComHasOffersAccess
+      has_offers_access: newComHasOffersAccess,
+      keywords: newComKeywords
     };
 
     if (imageUrl) payload.main_image = imageUrl;
@@ -1582,6 +1585,8 @@ function App() {
       setNewComMapsUrl(commerce.maps_url || '');
       setNewComMainImagePreview(commerce.main_image || null);
       setNewComDescription(commerce.description || '');
+      setNewComKeywords(commerce.keywords || []);
+      setTagInput('');
       setNewComInstagram(commerce.instagram_url || '');
       setNewComFacebook(commerce.facebook_url || '');
       setNewComWebsite(commerce.website_url || '');
@@ -2149,7 +2154,7 @@ function App() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', margin: 0 }}>Directorio de Comercios</h3>
-                    <button className="btn-add" onClick={() => { setEditingCommerceId(null); setNewComName(''); setNewComLocalityId(userRole === 'localadmin' ? assignedLocalityId : ''); setNewComRubroId(''); setNewComWhatsapp(''); setNewComAddress(''); setNewComMapsUrl(''); setNewComDescription(''); setNewComInstagram(''); setNewComFacebook(''); setNewComWebsite(''); setNewComMainImagePreview(null); setNewComMainImageFile(null); setGalleryItems([]); setShowCommerceModal(true); }}><Plus size={18} /> Alta de Comercio</button>
+                    <button className="btn-add" onClick={() => { setEditingCommerceId(null); setNewComName(''); setNewComLocalityId(userRole === 'localadmin' ? assignedLocalityId : ''); setNewComRubroId(''); setNewComWhatsapp(''); setNewComAddress(''); setNewComMapsUrl(''); setNewComDescription(''); setNewComKeywords([]); setTagInput(''); setNewComInstagram(''); setNewComFacebook(''); setNewComWebsite(''); setNewComMainImagePreview(null); setNewComMainImageFile(null); setGalleryItems([]); setShowCommerceModal(true); }}><Plus size={18} /> Alta de Comercio</button>
                   </div>
 
                   {isLoadingComercios ? (
@@ -2308,6 +2313,38 @@ function App() {
                           style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', minHeight: '80px', resize: 'vertical' }}
                         />
                         <div style={{ textAlign: 'right', fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>{(newComDescription || '').length}/550</div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Palabras Clave Destacadas (Máx. 15)</label>
+                        <input
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault();
+                              const val = tagInput.trim().replace(/,$/, '');
+                              if (val && newComKeywords.length < 15 && !newComKeywords.includes(val)) {
+                                setNewComKeywords([...newComKeywords, val]);
+                              }
+                              setTagInput('');
+                            }
+                          }}
+                          placeholder="Escribe un producto o servicio y presiona Enter..."
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', marginBottom: '8px' }}
+                        />
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {newComKeywords.map((kw, idx) => (
+                            <div key={idx} style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#6366f1', padding: '4px 10px', borderRadius: '16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {kw}
+                              <X size={12} style={{ cursor: 'pointer' }} onClick={() => setNewComKeywords(newComKeywords.filter((_, i) => i !== idx))} />
+                            </div>
+                          ))}
+                        </div>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                          Agrega los productos principales por los que quieres que te encuentren en el buscador global.
+                        </p>
                       </div>
 
                       <div className="admin-three-cols">
@@ -4488,10 +4525,16 @@ function App() {
                 if (publicLocalityId && c.locality_id != publicLocalityId) return false;
                 if (selectedPublicRubroId && c.rubro_id != selectedPublicRubroId) return false;
                 if (!searchQuery.trim()) return true;
-                const query = removeAccents(searchQuery.toLowerCase());
-                const matchName = removeAccents(c.name?.toLowerCase()).includes(query);
-                const matchRubro = removeAccents(c.rubros?.name?.toLowerCase()).includes(query);
-                return matchName || matchRubro;
+                const query = removeAccents(searchQuery.toLowerCase().trim());
+                const terms = query.split(/\s+/); // Separar por espacios para buscar término por término
+                
+                // El comercio debe coincidir con TODOS los términos que escribió el usuario
+                return terms.every(term => {
+                  const matchName = removeAccents(c.name?.toLowerCase() || '').includes(term);
+                  const matchRubro = removeAccents(c.rubros?.name?.toLowerCase() || '').includes(term);
+                  const matchKeyword = c.keywords?.some(k => removeAccents(k.toLowerCase()).includes(term)) || false;
+                  return matchName || matchRubro || matchKeyword;
+                });
               }).map(c => {
                 if (userLocation && c.latitud && c.longitud) {
                   c.distancia_km = getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, c.latitud, c.longitud);
