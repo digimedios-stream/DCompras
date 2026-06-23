@@ -3399,9 +3399,14 @@ function App() {
                   <button className="btn-add" onClick={async () => {
                     const name = prompt('Nombre del plan (ej: Trimestral):');
                     if (!name) return;
-                    const months = prompt('Duración en meses:');
-                    if (!months || isNaN(months)) return;
-                    const { error } = await supabase.from('planes').insert([{ name, duration_months: parseInt(months) }]);
+                    const months = prompt('Duración en meses (solo números, ej: 3):');
+                    if (!months) return;
+                    const parsedMonths = parseInt(months);
+                    if (isNaN(parsedMonths) || parsedMonths <= 0) {
+                      alert('Por favor, ingresa un número válido.');
+                      return;
+                    }
+                    const { error } = await supabase.from('planes').insert([{ name, duration_months: parsedMonths }]);
                     if (error) { alert('Error: ' + error.message); } else { fetchPlanes(); }
                   }}><Plus size={18} /> Nuevo Plan</button>
                 </div>
