@@ -9,7 +9,7 @@ import {
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
   Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark,
-  Type, Paintbrush, Upload
+  Type, Paintbrush, Upload, ClipboardEdit
 } from 'lucide-react';
 
 const removeAccents = (str) => {
@@ -4674,6 +4674,14 @@ function App() {
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Hacé crecer tu negocio con nuestra plataforma.</p>
                 </div>
               </button>
+
+              <button onClick={() => window.open('https://form.jotform.com/digimediosapps/ingreso', '_blank')} style={{ background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', textAlign: 'left' }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '12px', borderRadius: '15px' }}><ClipboardEdit size={28} /></div>
+                <div>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Solicitar Ingreso de Comercio</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Completa el formulario para unirte a D'Compras.</p>
+                </div>
+              </button>
             </div>
 
             <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>¿Necesitas ayuda o quieres anunciar tu negocio?</p>
@@ -4835,18 +4843,42 @@ function App() {
                 <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#fff' }}><Smartphone size={32} /></div>
                 <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Llevá tu ciudad en el bolsillo</h3>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '5px' }}>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#6366f1', marginTop: '2px' }}><Zap size={24} /></div>
+                  <div style={{ color: '#6366f1', marginTop: '2px', flexShrink: 0 }}><Zap size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Ofertas Flash</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Sé el primero en enterarte de descuentos exclusivos por tiempo limitado.</p></div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#ef4444', marginTop: '2px' }}><Heart size={24} /></div>
+                  <div style={{ color: '#ef4444', marginTop: '2px', flexShrink: 0 }}><Heart size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Comercios Favoritos</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Guardá tus lugares preferidos para acceder al instante.</p></div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#10b981', marginTop: '2px' }}><MessageCircle size={24} /></div>
+                  <div style={{ color: '#10b981', marginTop: '2px', flexShrink: 0 }}><MessageCircle size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Contacto Directo</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Comunicate por WhatsApp sin intermediarios ni comisiones extra.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#3b82f6', marginTop: '2px', flexShrink: 0 }}><Stethoscope size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Farmacia de Turno</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Encuentra rápidamente la farmacia disponible más cercana.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#f59e0b', marginTop: '2px', flexShrink: 0 }}><Sun size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Clima Satelital</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Conoce el clima con imagen satelital en tiempo real.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#8b5cf6', marginTop: '2px', flexShrink: 0 }}><Landmark size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Guía Turística</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Descubre los atractivos, historias y lugares de interés.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#ec4899', marginTop: '2px', flexShrink: 0 }}><MapPin size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Ubicación y Distancia</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Llega fácilmente a los comercios usando los mapas.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#06b6d4', marginTop: '2px', flexShrink: 0 }}><Search size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Buscador Inteligente</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Encuentra rápido por nombre, rubro o producto específico.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#14b8a6', marginTop: '2px', flexShrink: 0 }}><Globe size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Otras Localidades</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Cambia de ciudad y explora los comercios en toda la red.</p></div>
                 </div>
               </div>
               <button onClick={() => setShowUserBenefitsModal(false)} className="action-btn" style={{ width: '100%', marginTop: '30px', padding: '14px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a' }}>Entendido</button>
@@ -4863,18 +4895,46 @@ function App() {
                 <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#6366f1' }}><Store size={32} /></div>
                 <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Hacé crecer tu negocio</h3>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '5px' }}>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#6366f1', marginTop: '2px' }}><Image size={24} /></div>
+                  <div style={{ color: '#6366f1', marginTop: '2px', flexShrink: 0 }}><Image size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Tu Vidriera 24/7</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Perfil con galería de fotos, horarios y todas tus redes sociales integradas.</p></div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#10b981', marginTop: '2px' }}><MessageCircle size={24} /></div>
+                  <div style={{ color: '#10b981', marginTop: '2px', flexShrink: 0 }}><MessageCircle size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Venta sin Comisiones</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Tus clientes te compran directo por WhatsApp. El dinero es 100% tuyo.</p></div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                  <div style={{ color: '#f59e0b', marginTop: '2px' }}><Share2 size={24} /></div>
+                  <div style={{ color: '#f59e0b', marginTop: '2px', flexShrink: 0 }}><Share2 size={24} /></div>
                   <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Tarjeta Digital Compartible</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Link único hacia tu perfil para compartir en tu Instagram y WhatsApp.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#8b5cf6', marginTop: '2px', flexShrink: 0 }}><ShieldCheck size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Panel de Autogestión</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Acceso por usuario y contraseña para administrar tus fotos y datos.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#ef4444', marginTop: '2px', flexShrink: 0 }}><Zap size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Ofertas Flash</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Publica descuentos exclusivos por tiempo limitado para atraer clientes.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#ec4899', marginTop: '2px', flexShrink: 0 }}><Palette size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Editor Gráfico</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Crea notificaciones llamativas sin necesidad de programas externos.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#eab308', marginTop: '2px', flexShrink: 0 }}><Bell size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Notificaciones Masivas</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Envía alertas a todos los usuarios de la app sobre tus Ofertas Flash.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#22c55e', marginTop: '2px', flexShrink: 0 }}><DollarSign size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Planes Accesibles</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Elige planes de 3, 6 o 12 meses adaptados a tu negocio.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#0ea5e9', marginTop: '2px', flexShrink: 0 }}><Headset size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Atención Personalizada</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Soporte directo con el administrador de tu localidad.</p></div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ color: '#a855f7', marginTop: '2px', flexShrink: 0 }}><ClipboardEdit size={24} /></div>
+                  <div><h4 style={{ margin: '0 0 4px 0', color: isDark ? '#fff' : '#0f172a' }}>Ingreso 100% Digital</h4><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Formulario 24hs para elegir plan, subir fotos y abonar online o en efectivo.</p></div>
                 </div>
               </div>
               <button 
