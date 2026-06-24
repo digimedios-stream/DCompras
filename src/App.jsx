@@ -4422,6 +4422,7 @@ function App() {
                 </button>
                 <button 
                   onClick={async () => {
+                    setShowPushPrompt(false);
                     try {
                       const permission = await Notification.requestPermission();
                       if (permission === 'granted') {
@@ -4436,10 +4437,7 @@ function App() {
                           endpoint: subscription.endpoint,
                           keys: JSON.parse(JSON.stringify(subscription)).keys
                         }]);
-                        
-                        setShowPushPrompt(false);
                       } else {
-                        setShowPushPrompt(false);
                         localStorage.setItem('dcompras_hide_push_prompt', 'true');
                       }
                     } catch (error) {
