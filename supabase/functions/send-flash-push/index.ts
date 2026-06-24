@@ -17,7 +17,7 @@ serve(async (req) => {
     const body = await req.json();
     const record = body.record;
 
-    if (!record || !record.description) {
+    if (!record) {
       return new Response(JSON.stringify({ error: "No record found" }), { status: 400 });
     }
 
@@ -42,7 +42,7 @@ serve(async (req) => {
     // 4. Preparar el Payload del mensaje
     const payload = JSON.stringify({
       title: "⚡ ¡Nueva Oferta Flash!",
-      body: record.description,
+      body: record.description || "¡Aprovecha esta oportunidad por tiempo limitado!",
       url: "/?tab=ofertas" // Redirige a la pestaña de ofertas
     });
 
