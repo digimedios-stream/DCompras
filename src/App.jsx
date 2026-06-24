@@ -125,6 +125,9 @@ function App() {
   const [locationRequested, setLocationRequested] = useState(false);
   const [publicAtractivoModal, setPublicAtractivoModal] = useState(false);
   const [sharedAtractivoId, setSharedAtractivoId] = useState(null);
+  const [showPushPrompt, setShowPushPrompt] = useState(() => {
+    return !localStorage.getItem('dcompras_hide_push_prompt') && ('Notification' in window) && Notification.permission !== 'granted';
+  });
 
   useEffect(() => {
     if ((searchQuery || selectedPublicRubroId !== null || publicAtractivoModal) && !locationRequested) {
@@ -4381,6 +4384,77 @@ function App() {
           </div>
           );
         })()}
+
+        {/* PUSH NOTIFICATION SOFT PROMPT */}
+        {showPushPrompt && (
+          <div className="animate-in" style={{ padding: '0 20px', marginTop: '15px' }}>
+            <div style={{
+              background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#ffffff',
+              borderRadius: '20px',
+              padding: '20px',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`,
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '15px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)' }}></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Bell size={22} />
+                </div>
+                <h4 style={{ margin: 0, color: isDark ? '#fff' : '#0f172a', fontSize: '1.05rem' }}>No te pierdas de nada</h4>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: isDark ? '#cbd5e1' : '#64748b', lineHeight: 1.5 }}>
+                Las mejores ofertas duran horas. ¿Te avisamos cuando un comercio publique una Oferta Flash?
+              </p>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <button 
+                  onClick={() => {
+                    setShowPushPrompt(false);
+                    localStorage.setItem('dcompras_hide_push_prompt', 'true');
+                  }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '12px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, background: 'transparent', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  No me interesa
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const permission = await Notification.requestPermission();
+                      if (permission === 'granted') {
+                        const registration = await navigator.serviceWorker.ready;
+                        const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+                        const subscription = await registration.pushManager.subscribe({
+                          userVisibleOnly: true,
+                          applicationServerKey: vapidKey
+                        });
+                        
+                        await supabase.from('push_subscriptions').insert([{
+                          endpoint: subscription.endpoint,
+                          keys: JSON.parse(JSON.stringify(subscription)).keys
+                        }]);
+                        
+                        setShowPushPrompt(false);
+                      } else {
+                        setShowPushPrompt(false);
+                        localStorage.setItem('dcompras_hide_push_prompt', 'true');
+                      }
+                    } catch (error) {
+                      console.error("Error subscribiendo a push:", error);
+                    }
+                  }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', background: '#6366f1', color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  Sí, avísenme
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {(!isInstalled && deferredPrompt) && (
           <div className="install-banner animate-in" style={{ padding: '0 20px', marginTop: '15px' }}>
             <button 
