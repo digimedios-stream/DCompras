@@ -932,9 +932,9 @@ function App() {
       return;
     }
 
-    // Horario permitido: de 08:00 a 21:59 hs
+    // Horario permitido: de 08:00 a 21:59 hs (excepto superadmin)
     const currentHour = new Date().getHours();
-    if (currentHour < 8 || currentHour >= 22) {
+    if (userRole !== 'superadmin' && (currentHour < 8 || currentHour >= 22)) {
       alert('Las ofertas flash solo pueden publicarse en el horario permitido de 08:00 a 22:00 horas para evitar enviar notificaciones a los usuarios en la madrugada.');
       return;
     }
