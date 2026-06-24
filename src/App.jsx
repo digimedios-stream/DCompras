@@ -4331,7 +4331,7 @@ function App() {
           const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null);
           const groupedMap = new window.Map();
           filteredOfertas.forEach(o => {
-            const cid = o.commerce_id || (o.comercios && o.comercios.id) || o.id; // Fallback
+            const cid = o.commerce_id || (o.comercios && o.comercios.id) || 'admin_global'; // Fallback for global admin offers
             if (!groupedMap.has(cid)) {
               groupedMap.set(cid, { commerce: o.comercios, offers: [] });
             }
