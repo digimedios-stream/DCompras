@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
+import { convertToWebP } from './utils/imageUtils';
 import html2canvas from 'html2canvas';
 import {
   LayoutDashboard, MapPin, Tags, Store, Users, Bell, Search, Plus, TrendingUp,
@@ -936,13 +937,20 @@ function App() {
       let imageUrl = newOfertaPreview;
 
       if (newOfertaImage) {
-        const fileExt = newOfertaImage.name.split('.').pop();
+        let fileToUpload = newOfertaImage;
+        try {
+          fileToUpload = await convertToWebP(newOfertaImage);
+        } catch (e) {
+          console.error("Error convirtiendo imagen a WebP, subiendo original", e);
+        }
+        
+        const fileExt = fileToUpload.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `ofertas/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('comercios')
-          .upload(filePath, newOfertaImage);
+          .upload(filePath, fileToUpload);
 
         if (uploadError) throw uploadError;
 
@@ -1008,10 +1016,17 @@ function App() {
     try {
       let imageUrl = newAtractivoPreview;
       if (newAtractivoImage) {
-        const fileExt = newAtractivoImage.name.split('.').pop();
+        let fileToUpload = newAtractivoImage;
+        try {
+          fileToUpload = await convertToWebP(newAtractivoImage);
+        } catch (e) {
+          console.error("Error convirtiendo a WebP:", e);
+        }
+        
+        const fileExt = fileToUpload.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `turismo/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('comercios').upload(filePath, newAtractivoImage);
+        const { error: uploadError } = await supabase.storage.from('comercios').upload(filePath, fileToUpload);
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('comercios').getPublicUrl(filePath);
         imageUrl = publicUrl;
@@ -1402,13 +1417,20 @@ function App() {
 
     let imageUrl = null;
     if (newComMainImageFile) {
-      const fileExt = newComMainImageFile.name.split('.').pop();
+      let fileToUpload = newComMainImageFile;
+      try {
+        fileToUpload = await convertToWebP(newComMainImageFile);
+      } catch (e) {
+        console.error("Error WebP:", e);
+      }
+      
+      const fileExt = fileToUpload.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `principales/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('comercios')
-        .upload(filePath, newComMainImageFile);
+        .upload(filePath, fileToUpload);
 
       if (!uploadError) {
         const { data: { publicUrl } } = supabase.storage.from('comercios').getPublicUrl(filePath);
@@ -1421,11 +1443,18 @@ function App() {
     let finalGalleryUrls = [];
     for (const item of galleryItems) {
       if (item.file) {
-        const fileExt = item.file.name.split('.').pop();
+        let fileToUpload = item.file;
+        try {
+          fileToUpload = await convertToWebP(item.file);
+        } catch (e) {
+          console.error("Error WebP:", e);
+        }
+        
+        const fileExt = fileToUpload.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `galeria/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage.from('comercios').upload(filePath, item.file);
+        const { error: uploadError } = await supabase.storage.from('comercios').upload(filePath, fileToUpload);
         if (!uploadError) {
           const { data: { publicUrl } } = supabase.storage.from('comercios').getPublicUrl(filePath);
           finalGalleryUrls.push(publicUrl);

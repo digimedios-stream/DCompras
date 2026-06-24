@@ -60,6 +60,9 @@ async function runCleanup() {
   const { data: ofertas, error: ofError } = await supabase.from('ofertas').select('image_url');
   if (ofError) throw ofError;
 
+  const { data: atractivos, error: atError } = await supabase.from('atractivos_turisticos').select('image_url');
+  if (atError) throw atError;
+
   const dbImages = new Set();
   
   // Función para extraer el path relativo (ej: principales/foto.jpg) desde la URL completa
@@ -93,10 +96,17 @@ async function runCleanup() {
     }
   });
 
+  atractivos.forEach(a => {
+    if (a.image_url) {
+      const p = getPathFromUrl(a.image_url);
+      if (p) dbImages.add(p);
+    }
+  });
+
   console.log(`-> Se encontraron ${dbImages.size} imágenes activas en la base de datos.`);
 
-  // 2. Obtener todas las imágenes físicas guardadas en el Storage (en sus 3 carpetas)
-  const folders = ['galeria', 'principales', 'ofertas'];
+  // 2. Obtener todas las imágenes físicas guardadas en el Storage (en sus 4 carpetas)
+  const folders = ['galeria', 'principales', 'ofertas', 'turismo'];
   let storageFiles = [];
   
   for (const folder of folders) {
