@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { convertToWebP } from './utils/imageUtils';
 import html2canvas from 'html2canvas';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
+import CookieBanner from './components/CookieBanner';
 import {
   LayoutDashboard, MapPin, Tags, Store, Users, Bell, Search, Plus, TrendingUp,
   ArrowUpRight, Settings, LogOut, LogIn, Sun, Moon, ShieldCheck, Building, Home, Heart,
@@ -4602,6 +4605,8 @@ function App() {
           ))}
         </div>
 
+        <div id="tab-content-start"></div>
+
         {/* CONTENIDO SEGÚN TAB SELECCIONADA */}
         {publicTab === 'inicio' && (
           <>
@@ -4932,14 +4937,18 @@ function App() {
 
         <footer style={{ textAlign: 'center', padding: '40px 20px 100px 20px', background: isDark ? 'transparent' : '#f8fafc' }}>
           <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px' }}>D'Compras © 2026</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '12px' }}>
+            <span onClick={() => setView('privacy')} style={{ fontSize: '0.75rem', color: '#6366f1', cursor: 'pointer', textDecoration: 'underline' }}>Política de Privacidad</span>
+            <span onClick={() => setView('terms')} style={{ fontSize: '0.75rem', color: '#6366f1', cursor: 'pointer', textDecoration: 'underline' }}>Términos y Condiciones</span>
+          </div>
           <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Desarrollado por <span style={{ fontWeight: 700, color: '#6366f1' }}>Digimedios Apps</span></p>
         </footer>
 
         <nav className="bottom-nav">
-          <div className={`nav-tab ${publicTab === 'inicio' ? 'active' : ''}`} onClick={() => setPublicTab('inicio')}><Home size={24} /><span>Inicio</span></div>
-          <div className={`nav-tab ${publicTab === 'rubros' ? 'active' : ''}`} onClick={() => setPublicTab('rubros')}><Tags size={24} /><span>Rubros</span></div>
-          <div className={`nav-tab ${publicTab === 'favoritos' ? 'active' : ''}`} onClick={() => setPublicTab('favoritos')}><Heart size={24} /><span>Favoritos</span></div>
-          <div className={`nav-tab ${publicTab === 'informacion' ? 'active' : ''}`} onClick={() => setPublicTab('informacion')}><Headset size={24} /><span>Información</span></div>
+          <div className={`nav-tab ${publicTab === 'inicio' ? 'active' : ''}`} onClick={() => { setPublicTab('inicio'); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50); }}><Home size={24} /><span>Inicio</span></div>
+          <div className={`nav-tab ${publicTab === 'rubros' ? 'active' : ''}`} onClick={() => { setPublicTab('rubros'); setTimeout(() => { const el = document.getElementById('tab-content-start'); if(el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }, 50); }}><Tags size={24} /><span>Rubros</span></div>
+          <div className={`nav-tab ${publicTab === 'favoritos' ? 'active' : ''}`} onClick={() => { setPublicTab('favoritos'); setTimeout(() => { const el = document.getElementById('tab-content-start'); if(el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }, 50); }}><Heart size={24} /><span>Favoritos</span></div>
+          <div className={`nav-tab ${publicTab === 'informacion' ? 'active' : ''}`} onClick={() => { setPublicTab('informacion'); setTimeout(() => { const el = document.getElementById('tab-content-start'); if(el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }, 50); }}><Headset size={24} /><span>Información</span></div>
         </nav>
 
         {/* MODAL BENEFICIOS USUARIO */}
@@ -5355,7 +5364,23 @@ function App() {
   if (authLoading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#0f172a' : '#f8fafc', color: isDark ? '#fff' : '#0f172a', fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem' }}>Autenticando...</div>;
   if (view === 'login') return renderLogin();
   if (view === 'admin') return renderAdmin();
-  return renderPublic();
+  if (view === 'privacy') return (
+    <div style={{ minHeight: '100vh', background: isDark ? '#0f172a' : '#f8fafc' }}>
+      <PrivacyPolicy isDark={isDark} onBack={() => setView('public')} />
+    </div>
+  );
+  if (view === 'terms') return (
+    <div style={{ minHeight: '100vh', background: isDark ? '#0f172a' : '#f8fafc' }}>
+      <TermsAndConditions isDark={isDark} onBack={() => setView('public')} />
+    </div>
+  );
+  
+  return (
+    <>
+      {renderPublic()}
+      <CookieBanner isDark={isDark} />
+    </>
+  );
 }
 
 export default App;
