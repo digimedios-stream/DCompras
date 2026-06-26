@@ -2373,3 +2373,40 @@ h4,
     right: -8px;
   }
 }
+
+/* ===== ENHANCED CLOSE BUTTONS ===== */
+.enhanced-close-btn,
+.mobile-close-btn, 
+.close-gallery, 
+.close-btn {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+  transition: all 0.3s ease !important;
+  z-index: 50 !important;
+}
+
+.enhanced-close-btn:hover,
+.mobile-close-btn:hover, 
+.close-gallery:hover, 
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  transform: scale(1.1) !important;
+}
+
+.light-theme .enhanced-close-btn,
+.light-theme .mobile-close-btn, 
+.light-theme .close-gallery, 
+.light-theme .close-btn {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  color: #dc2626 !important;
+}

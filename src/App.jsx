@@ -739,6 +739,8 @@ function App() {
     }
   }, [comercios, atractivos]);
 
+
+
   const handleEditPrices = (loc) => {
     fetchPlanes(); // Re-asegurar carga
     setEditingPriceLocality(loc);
@@ -1661,6 +1663,143 @@ function App() {
   const [showCommerceBenefitsModal, setShowCommerceBenefitsModal] = useState(false);
   const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('dcompras_favorites') || '[]'));
   const [showPublicLocalityModal, setShowPublicLocalityModal] = useState(false);
+
+  const [activeStoryGroupIndex, setActiveStoryGroupIndex] = useState(null);
+  const [storyProgress, setStoryProgress] = useState(0);
+  const [isStoryPaused, setIsStoryPaused] = useState(false);
+
+  const groupedOfertas = React.useMemo(() => {
+    const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null);
+    const groupedMap = new window.Map();
+    filteredOfertas.forEach(o => {
+      const cid = o.commerce_id || (o.comercios && o.comercios.id) || 'admin_global';
+      if (!groupedMap.has(cid)) {
+        groupedMap.set(cid, { commerce: o.comercios, offers: [] });
+      }
+      groupedMap.get(cid).offers.push(o);
+    });
+    return Array.from(groupedMap.values());
+  }, [ofertas, publicLocalityId]);
+
+  useEffect(() => {
+    if (activeStoryGroupIndex === null || selectedOferta !== 'open') {
+      setStoryProgress(0);
+      return;
+    }
+
+    if (isStoryPaused) return;
+
+    const group = groupedOfertas[activeStoryGroupIndex];
+    if (!group || !group.offers[activeStoryIndex]) return;
+
+    const interval = setInterval(() => {
+      setStoryProgress(prev => {
+        if (prev >= 100) return 100;
+        return prev + 1;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [selectedOferta, activeStoryGroupIndex, activeStoryIndex, isStoryPaused, groupedOfertas]);
+
+  useEffect(() => {
+    if (storyProgress >= 100 && activeStoryGroupIndex !== null && selectedOferta === 'open') {
+      const group = groupedOfertas[activeStoryGroupIndex];
+      if (!group) return;
+
+      if (activeStoryIndex < group.offers.length - 1) {
+        setActiveStoryIndex(prev => prev + 1);
+        setStoryProgress(0);
+      } else {
+        if (activeStoryGroupIndex < groupedOfertas.length - 1) {
+          setActiveStoryGroupIndex(prev => prev + 1);
+          setActiveStoryIndex(0);
+          setStoryProgress(0);
+        } else {
+          setSelectedOferta(null);
+          setActiveStoryGroupIndex(null);
+          setStoryProgress(0);
+        }
+      }
+    }
+  }, [storyProgress, activeStoryGroupIndex, activeStoryIndex, groupedOfertas, selectedOferta]);
+
+  const handlePrevStory = (e) => {
+    e.stopPropagation();
+    if (activeStoryIndex > 0) {
+      setActiveStoryIndex(prev => prev - 1);
+      setStoryProgress(0);
+    } else {
+      if (activeStoryGroupIndex > 0) {
+        setActiveStoryGroupIndex(prev => prev - 1);
+        const prevGroup = groupedOfertas[activeStoryGroupIndex - 1];
+        setActiveStoryIndex(prevGroup.offers.length - 1);
+        setStoryProgress(0);
+      } else {
+        setStoryProgress(0);
+      }
+    }
+  };
+
+  const handleNextStory = (e) => {
+    e.stopPropagation();
+    setStoryProgress(100); 
+  };
+
+  const modalsRef = useRef({});
+  useEffect(() => {
+    modalsRef.current = {
+      selectedBusiness, publicAtractivoModal, selectedOferta, showOfertaModal,
+      showRubroModal, showCommerceModal, showLocalityModal, showPagoModal,
+      showPaymentDetails, showUserModal, showTurismoModal, showPriceModal,
+      showUserBenefitsModal, showCommerceBenefitsModal, view
+    };
+  }, [selectedBusiness, publicAtractivoModal, selectedOferta, showOfertaModal,
+      showRubroModal, showCommerceModal, showLocalityModal, showPagoModal,
+      showPaymentDetails, showUserModal, showTurismoModal, showPriceModal,
+      showUserBenefitsModal, showCommerceBenefitsModal, view]);
+
+  useEffect(() => {
+    window.history.pushState({ root: true }, '');
+
+    const handlePopState = (e) => {
+      const m = modalsRef.current;
+      const hasOpenModal = m.selectedBusiness || m.publicAtractivoModal || m.selectedOferta || m.showOfertaModal || 
+                           m.showRubroModal || m.showCommerceModal || m.showLocalityModal || m.showPagoModal || 
+                           m.showPaymentDetails || m.showUserModal || m.showTurismoModal || m.showPriceModal || 
+                           m.showUserBenefitsModal || m.showCommerceBenefitsModal || m.view === 'login';
+
+      if (hasOpenModal) {
+        if (m.selectedBusiness) setSelectedBusiness(null);
+        if (m.publicAtractivoModal) setPublicAtractivoModal(false);
+        if (m.selectedOferta) setSelectedOferta(null);
+        if (m.showOfertaModal) setShowOfertaModal(false);
+        if (m.showRubroModal) setShowRubroModal(false);
+        if (m.showCommerceModal) setShowCommerceModal(false);
+        if (m.showLocalityModal) setShowLocalityModal(false);
+        if (m.showPagoModal) setShowPagoModal(false);
+        if (m.showPaymentDetails) setShowPaymentDetails(null);
+        if (m.showUserModal) setShowUserModal(false);
+        if (m.showTurismoModal) setShowTurismoModal(false);
+        if (m.showPriceModal) setShowPriceModal(false);
+        if (m.showUserBenefitsModal) setShowUserBenefitsModal(false);
+        if (m.showCommerceBenefitsModal) setShowCommerceBenefitsModal(false);
+        if (m.view === 'login') setView('public');
+        
+        window.history.pushState({ root: true }, '');
+      } else {
+        const confirmExit = window.confirm("¿Estás seguro que deseas salir de la aplicación?");
+        if (!confirmExit) {
+          window.history.pushState({ root: true }, '');
+        } else {
+          window.history.back();
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Dragging states for rubros
   const rubrosScrollRef = React.useRef(null);
@@ -4337,19 +4476,7 @@ function App() {
         </header>
 
         {/* MURO DE OFERTAS FLASH (Estilo Stories) */}
-        {ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null).length > 0 && (() => {
-          const filteredOfertas = ofertas.filter(o => !publicLocalityId || o.locality_id == publicLocalityId || o.locality_id == null);
-          const groupedMap = new window.Map();
-          filteredOfertas.forEach(o => {
-            const cid = o.commerce_id || (o.comercios && o.comercios.id) || 'admin_global'; // Fallback for global admin offers
-            if (!groupedMap.has(cid)) {
-              groupedMap.set(cid, { commerce: o.comercios, offers: [] });
-            }
-            groupedMap.get(cid).offers.push(o);
-          });
-          const groupedOfertas = Array.from(groupedMap.values());
-
-          return (
+        {groupedOfertas.length > 0 && (
           <div className="ofertas-flash-container" style={{ padding: '20px 20px 0 20px', overflowX: 'auto', display: 'flex', gap: '15px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
             {groupedOfertas.map((group, index) => {
               const allSeen = group.offers.every(o => seenOfertas.includes(o.id));
@@ -4359,8 +4486,10 @@ function App() {
               <div 
                 key={index} 
                 onClick={() => {
-                  setSelectedOferta(group.offers); // Store the array of offers
+                  setActiveStoryGroupIndex(index);
+                  setSelectedOferta('open'); // Mantiene estado modal general
                   setActiveStoryIndex(0);
+                  setStoryProgress(0);
                   if (!seenOfertas.includes(firstUnseenOrFirst.id)) {
                     const newSeen = [...seenOfertas, firstUnseenOrFirst.id];
                     setSeenOfertas(newSeen);
@@ -4421,8 +4550,7 @@ function App() {
               </div>
             )})}
           </div>
-          );
-        })()}
+        )}
 
         {/* PUSH NOTIFICATION SOFT PROMPT */}
         {showPushPrompt && (
@@ -4844,7 +4972,7 @@ function App() {
           <div className="business-detail-backdrop" onClick={() => setSelectedBusiness(null)}>
             <div style={{ background: isDark ? '#0f172a' : '#ffffff', width: '100%', maxWidth: '600px', margin: '0 auto', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'slideUp 0.3s ease-out', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
               <div style={{ height: '200px', width: '100%', position: 'relative', backgroundImage: `url(${selectedBusiness.main_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#334155' }}>
-                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.7)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', color: '#fff' }} onClick={() => setSelectedBusiness(null)}><X size={20} /></div>
+                <div className="enhanced-close-btn" style={{ position: 'absolute', top: '15px', right: '15px' }} onClick={() => setSelectedBusiness(null)}><X size={24} /></div>
                 <div style={{ position: 'absolute', bottom: '-1px', left: '0', width: '100%', height: '80px', background: `linear-gradient(to top, ${isDark ? '#0f172a' : '#ffffff'}, transparent)` }}></div>
               </div>
               <div style={{ padding: '20px 24px', flex: 1, overflowY: 'auto' }}>
@@ -4955,7 +5083,7 @@ function App() {
         {showUserBenefitsModal && (
           <div className="gallery-modal" style={{ zIndex: 9999, justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '400px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer', color: '#64748b' }} onClick={() => setShowUserBenefitsModal(false)}><X size={24} /></div>
+              <div className="enhanced-close-btn" style={{ position: 'absolute', top: '20px', right: '20px' }} onClick={() => setShowUserBenefitsModal(false)}><X size={24} /></div>
               <div style={{ textAlign: 'center', marginBottom: '25px' }}>
                 <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#fff' }}><Smartphone size={32} /></div>
                 <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Llevá tu ciudad en el bolsillo</h3>
@@ -5007,7 +5135,7 @@ function App() {
         {showCommerceBenefitsModal && (
           <div className="gallery-modal" style={{ zIndex: 9999, justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '400px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer', color: '#64748b' }} onClick={() => setShowCommerceBenefitsModal(false)}><X size={24} /></div>
+              <div className="enhanced-close-btn" style={{ position: 'absolute', top: '20px', right: '20px' }} onClick={() => setShowCommerceBenefitsModal(false)}><X size={24} /></div>
               <div style={{ textAlign: 'center', marginBottom: '25px' }}>
                 <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px auto', color: '#6366f1' }}><Store size={32} /></div>
                 <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Hacé crecer tu negocio</h3>
@@ -5076,7 +5204,7 @@ function App() {
         {publicAtractivoModal && (
           <div className="gallery-modal" onClick={() => setPublicAtractivoModal(false)} style={{ zIndex: 100000, justifyContent: 'center', alignItems: 'center' }}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', background: isDark ? '#0f172a' : '#fff', borderRadius: '24px' }}>
-              <div className="modal-header" style={{ position: 'sticky', top: 0, background: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', zIndex: 10, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, padding: '20px' }}>
+              <div className="modal-header" style={{ position: 'sticky', top: 0, background: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', zIndex: 10, borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 className="font-outfit" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Landmark size={24} color="#6366f1" /> Guía Turística</h3>
                 <button className="close-btn" onClick={() => setPublicAtractivoModal(false)}><X size={24} /></button>
               </div>
@@ -5164,34 +5292,14 @@ function App() {
         })()}
 
         {/* MODAL DETALLE DE OFERTA FLASH (Estilo Story) */}
-        {selectedOferta && Array.isArray(selectedOferta) && (() => {
-          const currentOferta = selectedOferta[activeStoryIndex];
+        {selectedOferta === 'open' && activeStoryGroupIndex !== null && (() => {
+          const currentGroup = groupedOfertas[activeStoryGroupIndex];
+          if (!currentGroup) return null;
+          const currentOferta = currentGroup.offers[activeStoryIndex];
           if (!currentOferta) return null;
 
-          const handleNextStory = (e) => {
-            e.stopPropagation();
-            if (activeStoryIndex < selectedOferta.length - 1) {
-              setActiveStoryIndex(activeStoryIndex + 1);
-              const nextOffer = selectedOferta[activeStoryIndex + 1];
-              if (!seenOfertas.includes(nextOffer.id)) {
-                const newSeen = [...seenOfertas, nextOffer.id];
-                setSeenOfertas(newSeen);
-                localStorage.setItem('dcompras_seen_ofertas', JSON.stringify(newSeen));
-              }
-            } else {
-              setSelectedOferta(null);
-            }
-          };
-
-          const handlePrevStory = (e) => {
-            e.stopPropagation();
-            if (activeStoryIndex > 0) {
-              setActiveStoryIndex(activeStoryIndex - 1);
-            }
-          };
-
           return (
-          <div className="inapp-viewer-backdrop" onClick={() => setSelectedOferta(null)} style={{ zIndex: 11000, padding: 0 }}>
+          <div className="inapp-viewer-backdrop" onClick={() => { setSelectedOferta(null); setActiveStoryGroupIndex(null); }} style={{ zIndex: 11000, padding: 0 }}>
             <div 
               style={{ 
                 background: isDark ? '#0f172a' : '#ffffff', 
@@ -5207,13 +5315,20 @@ function App() {
               }} 
               onClick={e => e.stopPropagation()}
             >
-              <div style={{ position: 'relative', width: '100%', flex: 1, background: '#111', display: 'flex', flexDirection: 'column' }}>
+              <div 
+                style={{ position: 'relative', width: '100%', flex: 1, background: '#111', display: 'flex', flexDirection: 'column' }}
+                onMouseDown={() => setIsStoryPaused(true)}
+                onMouseUp={() => setIsStoryPaused(false)}
+                onMouseLeave={() => setIsStoryPaused(false)}
+                onTouchStart={() => setIsStoryPaused(true)}
+                onTouchEnd={() => setIsStoryPaused(false)}
+              >
                 
                 {/* Progress bars at the top */}
                 <div style={{ display: 'flex', gap: '4px', padding: '15px 15px 10px', position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20 }}>
-                  {selectedOferta.map((_, i) => (
+                  {currentGroup.offers.map((_, i) => (
                     <div key={i} style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.3)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: i < activeStoryIndex ? '100%' : (i === activeStoryIndex ? '100%' : '0%'), height: '100%', background: '#fff' }}></div>
+                      <div style={{ width: i < activeStoryIndex ? '100%' : (i === activeStoryIndex ? `${storyProgress}%` : '0%'), height: '100%', background: '#fff', transition: i === activeStoryIndex ? 'width 0.05s linear' : 'none' }}></div>
                     </div>
                   ))}
                 </div>
@@ -5225,25 +5340,8 @@ function App() {
                 </div>
 
                 {/* Close Button */}
-                <div 
-                  onClick={(e) => { e.stopPropagation(); setSelectedOferta(null); }} 
-                  style={{ 
-                    position: 'absolute', 
-                    top: '25px', 
-                    right: '15px', 
-                    background: 'rgba(0,0,0,0.5)', 
-                    borderRadius: '50%', 
-                    width: '36px', 
-                    height: '36px', 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    cursor: 'pointer', 
-                    color: '#fff', 
-                    zIndex: 20
-                  }}
-                >
-                  <X size={20} />
+                <div className="enhanced-close-btn" style={{ position: 'absolute', top: '25px', right: '15px', zIndex: 20 }} onClick={(e) => { e.stopPropagation(); setSelectedOferta(null); setActiveStoryGroupIndex(null); }}>
+                  <X size={24} />
                 </div>
 
                 {/* Main Image */}
@@ -5323,7 +5421,10 @@ function App() {
 
   const renderLogin = () => (
     <div style={{ display: 'flex', height: '100vh', background: isDark ? '#0f172a' : '#f8fafc', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: isDark ? '#1e293b' : '#ffffff', padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}` }}>
+      <div style={{ position: 'relative', background: isDark ? '#1e293b' : '#ffffff', padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}` }}>
+        <button onClick={() => setView('public')} className="enhanced-close-btn" style={{ position: 'absolute', top: '15px', right: '15px', border: 'none' }}>
+          <X size={24} />
+        </button>
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <div className="brand-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', width: '100%' }}><img src="/logo.png" alt="D'Compras Logo" style={{ maxWidth: '100%', height: '150px', objectFit: 'contain' }} /></div>
           <h2 style={{ color: isDark ? '#fff' : '#0f172a', fontSize: '1.5rem', margin: 0 }}>Iniciar Sesión</h2>
