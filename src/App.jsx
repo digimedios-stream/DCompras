@@ -5329,10 +5329,10 @@ function App() {
               style={{ 
                 background: isDark ? '#0f172a' : '#ffffff', 
                 width: '100%', 
-                height: '100%',
+                height: '100dvh',
                 maxWidth: '500px', 
                 borderRadius: '0', 
-                overflow: 'hidden', 
+                overflowY: 'auto', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -5370,7 +5370,7 @@ function App() {
                 </div>
 
                 {/* Main Image */}
-                <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ flexShrink: 0, height: '85dvh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img src={currentOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   
                   {/* Tap areas for Prev / Next */}
@@ -5433,6 +5433,29 @@ function App() {
                         <Store size={20} /> Perfil
                       </button>
                     )}
+                    <button 
+                      className="action-btn" 
+                      style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}
+                      onClick={async () => {
+                        const shareData = {
+                          title: `Oferta Flash: ${currentOferta.comercios?.name || 'D\'Compras'}`,
+                          text: `¡Mirá esta OFERTA FLASH en D\'Compras!\n\n${currentOferta.description}\n\nDescargá la app para ver más ofertas en tu ciudad.`,
+                          url: window.location.origin
+                        };
+                        try {
+                          if (navigator.share) {
+                            await navigator.share(shareData);
+                          } else {
+                            navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
+                            alert("¡Enlace y texto copiados al portapapeles!");
+                          }
+                        } catch (err) {
+                          console.log('Error sharing:', err);
+                        }
+                      }}
+                    >
+                      <Share2 size={20} />
+                    </button>
                   </div>
                 )}
               </div>
