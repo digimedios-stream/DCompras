@@ -576,6 +576,8 @@ h4,
 
 .table-wrapper {
   padding: 0 32px 32px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
@@ -1666,6 +1668,11 @@ h4,
 
   .header-right {
     justify-content: space-between;
+  }
+
+  .header-left h2 {
+    font-size: 1.3rem;
+    white-space: normal;
   }
 }
 

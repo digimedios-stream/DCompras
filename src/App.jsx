@@ -1664,6 +1664,16 @@ function App() {
   const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('dcompras_favorites') || '[]'));
   const [showPublicLocalityModal, setShowPublicLocalityModal] = useState(false);
 
+  const randomTopComercios = React.useMemo(() => {
+    const valid = comercios.filter(c => c.status === 'active' && (!publicLocalityId || c.locality_id == publicLocalityId) && (!c.expiration_date || new Date(c.expiration_date) >= new Date()));
+    const shuffled = [...valid];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 3);
+  }, [comercios, publicLocalityId]);
+
   const [activeStoryGroupIndex, setActiveStoryGroupIndex] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
   const [isStoryPaused, setIsStoryPaused] = useState(false);
@@ -2498,23 +2508,39 @@ function App() {
 
                       <div>
                         <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Palabras Clave Destacadas (Máx. 15)</label>
-                        <input
-                          type="text"
-                          value={tagInput}
-                          onChange={(e) => setTagInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ',') {
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <input
+                            type="text"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                const val = tagInput.trim().replace(/,$/, '');
+                                if (val && newComKeywords.length < 15 && !newComKeywords.includes(val)) {
+                                  setNewComKeywords([...newComKeywords, val]);
+                                }
+                                setTagInput('');
+                              }
+                            }}
+                            placeholder="Escribe un producto o servicio..."
+                            style={{ flex: 1, minWidth: 0, padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
                               e.preventDefault();
                               const val = tagInput.trim().replace(/,$/, '');
                               if (val && newComKeywords.length < 15 && !newComKeywords.includes(val)) {
                                 setNewComKeywords([...newComKeywords, val]);
                               }
                               setTagInput('');
-                            }
-                          }}
-                          placeholder="Escribe un producto o servicio y presiona Enter..."
-                          style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', marginBottom: '8px' }}
-                        />
+                            }}
+                            style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: 'none', borderRadius: '12px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                          >
+                            Agregar
+                          </button>
+                        </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                           {newComKeywords.map((kw, idx) => (
                             <div key={idx} style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#6366f1', padding: '4px 10px', borderRadius: '16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4744,7 +4770,7 @@ function App() {
                   <h3 className="font-outfit" style={{ margin: 0, color: isDark ? '#fff' : '#0f172a' }}>🔥 Destacados de la zona</h3>
                 </div>
                 <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', padding: '15px 20px 25px 20px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', flexWrap: 'nowrap', scrollBehavior: 'smooth' }}>
-                  {comercios.filter(c => c.status === 'active' && (!publicLocalityId || c.locality_id == publicLocalityId) && (!c.expiration_date || new Date(c.expiration_date) >= new Date())).slice(0, 3).map((biz, i) => (
+                  {randomTopComercios.map((biz, i) => (
                     <div key={`feat-${i}`} onClick={() => setSelectedBusiness(biz)} style={{ flex: '0 0 260px', background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', borderRadius: '24px', overflow: 'hidden', boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.1)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}>
                       <div style={{ height: '150px', width: '100%', backgroundImage: `url(${biz.main_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#334155', position: 'relative' }}>
                         <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(251, 191, 36, 0.95)', color: '#78350f', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}><Star size={12} fill="#78350f" /> Top</div>
@@ -4811,7 +4837,6 @@ function App() {
                   <div className="business-info-public">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
                       <h4 className="font-outfit" style={{ margin: 0, color: isDark ? '#fff' : '#0f172a' }}>{biz.name}</h4>
-                      <div className="business-rating"><Star size={14} fill="#fbbf24" />{biz.rating || '5.0'}</div>
                     </div>
                     <div className="business-meta">
                       <span>{biz.rubros?.name || 'Sin Rubro'}</span><span>•</span><span>{biz.localidades?.name || 'Sin Localidad'}</span>
