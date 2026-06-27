@@ -5437,9 +5437,11 @@ function App() {
                       className="action-btn" 
                       style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}
                       onClick={async () => {
+                        const commerceName = currentOferta.comercios?.name;
+                        const textTitle = commerceName ? `¡Mirá esta OFERTA FLASH de ${commerceName} en D'Compras!` : `¡Mirá esta OFERTA FLASH en D'Compras!`;
                         const shareData = {
-                          title: `Oferta Flash: ${currentOferta.comercios?.name || 'D\'Compras'}`,
-                          text: `¡Mirá esta OFERTA FLASH en D\'Compras!\n\n${currentOferta.description}\n\nDescargá la app para ver más ofertas en tu ciudad.`,
+                          title: `Oferta Flash: ${commerceName || 'D\'Compras'}`,
+                          text: `${textTitle}\n\n${currentOferta.description}\n\nDescargá la app para ver más ofertas en tu ciudad.`,
                           url: window.location.origin
                         };
                         try {
