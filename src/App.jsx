@@ -134,6 +134,41 @@ function App() {
   });
 
   useEffect(() => {
+    const ensureSubscription = async () => {
+      if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          if (!subscription) {
+            const urlB64ToUint8Array = (base64String) => {
+              const padding = '='.repeat((4 - base64String.length % 4) % 4);
+              const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+              const rawData = window.atob(base64);
+              const outputArray = new Uint8Array(rawData.length);
+              for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+              }
+              return outputArray;
+            };
+            const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+            const newSubscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlB64ToUint8Array(vapidKey)
+            });
+            await supabase.from('push_subscriptions').upsert([{
+              endpoint: newSubscription.endpoint,
+              keys: JSON.parse(JSON.stringify(newSubscription)).keys
+            }], { onConflict: 'endpoint' });
+          }
+        } catch (e) {
+          console.error('Error auto-subscribing push:', e);
+        }
+      }
+    };
+    ensureSubscription();
+  }, []);
+
+  useEffect(() => {
     if ((searchQuery || selectedPublicRubroId !== null || publicAtractivoModal) && !locationRequested) {
       setLocationRequested(true);
       if ('geolocation' in navigator) {
