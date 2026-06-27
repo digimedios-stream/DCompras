@@ -5370,7 +5370,7 @@ function App() {
                 </div>
 
                 {/* Main Image */}
-                <div style={{ flexShrink: 0, height: '85dvh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ flexShrink: 0, height: '75dvh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img src={currentOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   
                   {/* Tap areas for Prev / Next */}
