@@ -5426,7 +5426,8 @@ function App() {
                         className="action-btn" 
                         style={{ padding: '14px', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         onClick={() => {
-                          setSelectedBusiness(currentOferta.comercios);
+                          const fullBusiness = comercios.find(c => c.id === currentOferta.commerce_id) || currentOferta.comercios;
+                          setSelectedBusiness(fullBusiness);
                           setSelectedOferta(null);
                         }}
                       >
