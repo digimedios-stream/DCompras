@@ -5055,6 +5055,7 @@ function App() {
                       }
                     } catch (err) {
                       console.error('Error toggling push:', err);
+                      alert('Error al activar notificaciones: ' + err.message);
                     }
                     setIsTogglingPush(false);
                   }}
