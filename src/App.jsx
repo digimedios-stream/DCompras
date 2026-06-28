@@ -139,7 +139,9 @@ function App() {
         try {
           const registration = await navigator.serviceWorker.ready;
           const subscription = await registration.pushManager.getSubscription();
-          if (!subscription) {
+          if (subscription) {
+            setIsPushSubscribed(true);
+          } else {
             const urlB64ToUint8Array = (base64String) => {
               const padding = '='.repeat((4 - base64String.length % 4) % 4);
               const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -159,6 +161,7 @@ function App() {
               endpoint: newSubscription.endpoint,
               keys: JSON.parse(JSON.stringify(newSubscription)).keys
             }], { onConflict: 'endpoint' });
+            setIsPushSubscribed(true);
           }
         } catch (e) {
           console.error('Error auto-subscribing push:', e);
@@ -317,6 +320,8 @@ function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+  const [isTogglingPush, setIsTogglingPush] = useState(false);
 
   // Estados para Ofertas Flash
   const [ofertas, setOfertas] = useState([]);
@@ -4994,6 +4999,80 @@ function App() {
                 </div>
               </button>
             </div>
+
+            {/* TOGGLE DE NOTIFICACIONES - Solo visible si la app está instalada o el navegador soporta notificaciones */}
+            {('Notification' in window) && (
+              <div style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', padding: '20px', borderRadius: '20px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: isPushSubscribed ? 'rgba(99, 102, 241, 0.1)' : (isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9'), color: isPushSubscribed ? '#6366f1' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                    <Bell size={22} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: isDark ? '#fff' : '#0f172a' }}>Notificaciones</h4>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>{isPushSubscribed ? 'Recibirás alertas de Ofertas Flash' : 'Las alertas están desactivadas'}</p>
+                  </div>
+                </div>
+                <div
+                  onClick={async () => {
+                    if (isTogglingPush) return;
+                    setIsTogglingPush(true);
+                    try {
+                      if (isPushSubscribed) {
+                        // DESACTIVAR: desuscribir del navegador y borrar de Supabase
+                        const registration = await navigator.serviceWorker.ready;
+                        const subscription = await registration.pushManager.getSubscription();
+                        if (subscription) {
+                          await supabase.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint);
+                          await subscription.unsubscribe();
+                        }
+                        setIsPushSubscribed(false);
+                      } else {
+                        // ACTIVAR: pedir permiso, suscribir y guardar en Supabase
+                        const permission = await Notification.requestPermission();
+                        if (permission === 'granted') {
+                          const registration = await navigator.serviceWorker.ready;
+                          const urlB64ToUint8Array = (base64String) => {
+                            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                            const rawData = window.atob(base64);
+                            const outputArray = new Uint8Array(rawData.length);
+                            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+                            return outputArray;
+                          };
+                          const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+                          const newSub = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlB64ToUint8Array(vapidKey)
+                          });
+                          await supabase.from('push_subscriptions').upsert([{
+                            endpoint: newSub.endpoint,
+                            keys: JSON.parse(JSON.stringify(newSub)).keys
+                          }], { onConflict: 'endpoint' });
+                          setIsPushSubscribed(true);
+                          setShowPushPrompt(false);
+                          localStorage.setItem('dcompras_hide_push_prompt', 'true');
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error toggling push:', err);
+                    }
+                    setIsTogglingPush(false);
+                  }}
+                  style={{
+                    width: '52px', height: '28px', borderRadius: '14px', cursor: isTogglingPush ? 'wait' : 'pointer',
+                    background: isPushSubscribed ? '#6366f1' : (isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'),
+                    position: 'relative', transition: 'background 0.3s', flexShrink: 0
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: '3px',
+                    left: isPushSubscribed ? '27px' : '3px',
+                    transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }}></div>
+                </div>
+              </div>
+            )}
 
             <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>¿Necesitas ayuda o quieres anunciar tu negocio?</p>
 
