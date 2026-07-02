@@ -21,6 +21,13 @@ const removeAccents = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
+const generateSlug = (text) => {
+  if (!text) return '';
+  let slug = text.toLowerCase();
+  slug = slug.replace(/[áäâà]/g, 'a').replace(/[éëêè]/g, 'e').replace(/[íïîì]/g, 'i').replace(/[óöôò]/g, 'o').replace(/[úüûù]/g, 'u').replace(/[ñ]/g, 'n');
+  return slug.replace(/[^a-z0-9-]/g, '');
+};
+
 // --- MOCK DATA ---
 const commerceData = [
   { name: 'Pizzería Roma', loc: 'Sastre', cat: 'Gastronomía', catColor: 'badge-indigo', status: 'active', icon: Utensils, rating: 4.8, reviews: 124 },
@@ -251,6 +258,7 @@ function App() {
   const [isLoadingComercios, setIsLoadingComercios] = useState(false);
   const [isSavingCommerce, setIsSavingCommerce] = useState(false);
   const [newComName, setNewComName] = useState('');
+  const [newComSlug, setNewComSlug] = useState('');
   const [newComLocalityId, setNewComLocalityId] = useState('');
   const [newComRubroId, setNewComRubroId] = useState('');
   const [newComWhatsapp, setNewComWhatsapp] = useState('');
@@ -747,7 +755,7 @@ function App() {
     if (comercios && comercios.length > 0) {
       const comercioId = params.get('comercio');
       if (comercioId) {
-        const biz = comercios.find(c => String(c.id) === comercioId);
+        const biz = comercios.find(c => String(c.id) === comercioId || c.slug === comercioId);
         if (biz) {
           setSelectedBusiness(biz);
           if (biz.locality_id) {
@@ -1532,6 +1540,7 @@ function App() {
     let query;
     const payload = {
       name: newComName,
+      slug: newComSlug || generateSlug(newComName),
       rubro_id: newComRubroId,
       locality_id: newComLocalityId,
       whatsapp: newComWhatsapp,
@@ -1662,6 +1671,7 @@ function App() {
       setActiveTab('comercios');
       setEditingCommerceId(commerce.id);
       setNewComName(commerce.name);
+      setNewComSlug(commerce.slug || '');
       setNewComLocalityId(commerce.locality_id);
       setNewComRubroId(commerce.rubro_id);
       setNewComWhatsapp(commerce.whatsapp || '');
@@ -2490,8 +2500,18 @@ function App() {
                       <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Nombre Comercial</label>
-                          <input type="text" value={newComName} onChange={e => setNewComName(e.target.value)} placeholder="Ej: Pizzería Roma" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
+                          <input type="text" value={newComName} onChange={e => {
+                            setNewComName(e.target.value);
+                            if (!editingCommerceId) setNewComSlug(generateSlug(e.target.value));
+                          }} placeholder="Ej: Pizzería Roma" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
                         </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Alias URL (Slug)</label>
+                          <input type="text" disabled={userRole !== 'superadmin'} value={newComSlug} onChange={e => setNewComSlug(generateSlug(e.target.value))} placeholder="ej: pizzeriaroma" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', opacity: userRole !== 'superadmin' ? 0.7 : 1 }} />
+                        </div>
+                      </div>
+
+                      <div className="admin-two-cols">
                         <div>
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Localidad</label>
                           <select
@@ -4422,7 +4442,7 @@ function App() {
 
     const handleShare = async (biz, isAtractivo = false) => {
       const typeParam = isAtractivo ? 'atractivo' : 'comercio';
-      const shareUrl = `${window.location.origin}${window.location.pathname}?${typeParam}=${biz.id}`;
+      const shareUrl = `${window.location.origin}${window.location.pathname}?${typeParam}=${biz.slug || biz.id}`;
       const textIntro = isAtractivo ? `¡Mirá este lugar en D'Compras! ` : `¡Mirá este comercio en D'Compras! `;
       const shareData = {
         title: biz.name,
