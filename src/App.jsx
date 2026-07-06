@@ -4841,8 +4841,8 @@ function App() {
                 </button>
               )}
               {currentLocalityData.satellite_link && (
-                <button onClick={() => { setViewerTitle('Imagen Satelital'); setViewerUrl(currentLocalityData.satellite_link); }} className="action-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                  <Map size={16} /> Satélite
+                <button onClick={() => { setViewerTitle('Clima'); setViewerUrl(currentLocalityData.satellite_link); }} className="action-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <Map size={16} /> Clima
                 </button>
               )}
               {currentLocalityData.pharmacies_link && (
