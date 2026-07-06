@@ -13,7 +13,7 @@ import {
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
   Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark,
-  Type, Paintbrush, Upload, ClipboardEdit
+  Type, Paintbrush, Upload, ClipboardEdit, Wand2
 } from 'lucide-react';
 
 const removeAccents = (str) => {
@@ -344,6 +344,12 @@ function App() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
   });
+  
+  // Asistente Mágico
+  const [magicKeywords, setMagicKeywords] = useState('');
+  const [isGeneratingMagic, setIsGeneratingMagic] = useState(false);
+  const [showMagicInput, setShowMagicInput] = useState(false);
+
   const [isSavingOferta, setIsSavingOferta] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState(null);
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
@@ -971,6 +977,38 @@ function App() {
       .order('created_at', { ascending: false });
     if (!error) setAtractivos(data || []);
     setIsLoadingAtractivos(false);
+  };
+
+  const handleMagicOffer = async () => {
+    if (!magicKeywords.trim()) return;
+    setIsGeneratingMagic(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-magic-offer`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ keywords: magicKeywords, commerceName: assignedCommerce?.name || 'Local' })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (data && data.text) {
+        setNewOfertaDesc(data.text);
+        setShowMagicInput(false);
+      }
+    } catch (err) {
+      console.error('Error invocando IA:', err);
+      alert(`Detalle del error:\n\n${err.message}\n\nSi el error habla de la API Key, quizás haya que revisar cómo se guardó.`);
+    } finally {
+      setIsGeneratingMagic(false);
+    }
   };
 
   const handleSaveOferta = async () => {
@@ -4207,7 +4245,38 @@ function App() {
 
                   {/* Descripción y duración (siempre visible) */}
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Descripción Corta</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Descripción Corta</label>
+                      <button 
+                        onClick={() => setShowMagicInput(!showMagicInput)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 5px rgba(99, 102, 241, 0.4)' }}
+                      >
+                        <Wand2 size={12} /> Asistente IA
+                      </button>
+                    </div>
+                    
+                    {showMagicInput && (
+                      <div className="animate-in" style={{ marginBottom: '10px', padding: '12px', background: isDark ? 'rgba(168, 85, 247, 0.1)' : '#f3e8ff', borderRadius: '12px', border: `1px solid ${isDark ? 'rgba(168, 85, 247, 0.3)' : '#d8b4fe'}` }}>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '0.8rem', color: isDark ? '#d8b4fe' : '#7e22ce', fontWeight: 600 }}>¿Qué vas a ofrecer?</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            value={magicKeywords} 
+                            onChange={(e) => setMagicKeywords(e.target.value)}
+                            placeholder="Ej: Zapatillas deportivas, 30% descuento..."
+                            style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', outline: 'none', background: isDark ? 'rgba(0,0,0,0.2)' : '#fff', color: isDark ? '#fff' : '#0f172a', fontSize: '0.85rem' }}
+                          />
+                          <button 
+                            onClick={handleMagicOffer}
+                            disabled={isGeneratingMagic || !magicKeywords.trim()}
+                            style={{ background: '#a855f7', color: '#fff', border: 'none', padding: '0 12px', borderRadius: '8px', cursor: (isGeneratingMagic || !magicKeywords.trim()) ? 'not-allowed' : 'pointer', opacity: (isGeneratingMagic || !magicKeywords.trim()) ? 0.7 : 1, fontWeight: 'bold', fontSize: '0.8rem' }}
+                          >
+                            {isGeneratingMagic ? '...' : 'Generar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <textarea value={newOfertaDesc} onChange={e => setNewOfertaDesc(e.target.value)} placeholder="Ej: 2x1 en hamburguesas solo por hoy..." style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', height: '80px', resize: 'none' }} />
                   </div>
 
@@ -4898,6 +4967,11 @@ function App() {
                     <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(biz.id) ? '#ef4444' : '#fff', transition: 'all 0.2s', zIndex: 10 }}>
                       <Heart size={22} fill={favorites.includes(biz.id) ? '#ef4444' : 'transparent'} />
                     </div>
+                    {ofertas.some(o => o.commerce_id === biz.id) && (
+                      <div style={{ position: 'absolute', bottom: '10px', right: '15px', background: '#eab308', color: '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 10, boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
+                        <Zap size={14} fill="#fff" /> Oferta Flash
+                      </div>
+                    )}
                     {(biz.gallery_images && biz.gallery_images.length > 0) && (
                       <div style={{ position: 'absolute', bottom: '10px', left: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '5px', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                         <Camera size={16} /><span style={{ fontSize: '0.8rem', fontWeight: '600' }}>{biz.gallery_images.length} Fotos</span>
@@ -4956,6 +5030,11 @@ function App() {
                       <div onClick={(e) => toggleFavorite(e, biz.id)} style={{ position: 'absolute', top: '15px', left: '15px', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', zIndex: 10 }}>
                         <Heart size={22} fill="#ef4444" />
                       </div>
+                      {ofertas.some(o => o.commerce_id === biz.id) && (
+                        <div style={{ position: 'absolute', bottom: '10px', right: '15px', background: '#eab308', color: '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 10, boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
+                          <Zap size={14} fill="#fff" /> Oferta Flash
+                        </div>
+                      )}
                     </div>
                     <div className="business-info-public">
                       <h4 className="font-outfit" style={{ margin: 0, color: isDark ? '#fff' : '#0f172a' }}>{biz.name}</h4>
