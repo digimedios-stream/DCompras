@@ -13,7 +13,7 @@ import {
   X, Camera, CreditCard, DollarSign, AlertCircle, Map, UserPlus, MoreVertical,
   Briefcase, ShoppingCart, Gamepad2, Headset, ShieldAlert, Image,
   Globe, Link as LinkIcon, Palette, Save, Trash2, Edit3, CheckCircle, Menu, Eye, EyeOff, Zap, Share2, Landmark,
-  Type, Paintbrush, Upload, ClipboardEdit, Wand2
+  Type, Paintbrush, Upload, ClipboardEdit, Wand2, Play
 } from 'lucide-react';
 
 const removeAccents = (str) => {
@@ -264,6 +264,7 @@ function App() {
   const [newComWhatsapp, setNewComWhatsapp] = useState('');
   const [newComAddress, setNewComAddress] = useState('');
   const [newComMapsUrl, setNewComMapsUrl] = useState('');
+  const [newComVideoUrl, setNewComVideoUrl] = useState('');
   const [newComMainImageFile, setNewComMainImageFile] = useState(null);
   const [newComMainImagePreview, setNewComMainImagePreview] = useState(null);
   const [editingCommerceId, setEditingCommerceId] = useState(null);
@@ -1584,6 +1585,7 @@ function App() {
       whatsapp: newComWhatsapp,
       address: newComAddress,
       maps_url: newComMapsUrl,
+      video_url: newComVideoUrl,
       latitud: latitud,
       longitud: longitud,
       status: 'active',
@@ -1614,6 +1616,7 @@ function App() {
       setNewComWhatsapp('');
       setNewComAddress('');
       setNewComMapsUrl('');
+      setNewComVideoUrl('');
       setNewComDescription('');
       setNewComInstagram('');
       setNewComFacebook('');
@@ -1715,6 +1718,7 @@ function App() {
       setNewComWhatsapp(commerce.whatsapp || '');
       setNewComAddress(commerce.address || '');
       setNewComMapsUrl(commerce.maps_url || '');
+      setNewComVideoUrl(commerce.video_url || '');
       setNewComMainImagePreview(commerce.main_image || null);
       setNewComDescription(commerce.description || '');
       setNewComKeywords(commerce.keywords || []);
@@ -2433,7 +2437,7 @@ function App() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a', margin: 0 }}>Directorio de Comercios</h3>
-                    <button className="btn-add" onClick={() => { setEditingCommerceId(null); setNewComName(''); setNewComLocalityId(userRole === 'localadmin' ? assignedLocalityId : ''); setNewComRubroId(''); setNewComWhatsapp(''); setNewComAddress(''); setNewComMapsUrl(''); setNewComDescription(''); setNewComKeywords([]); setTagInput(''); setNewComInstagram(''); setNewComFacebook(''); setNewComWebsite(''); setNewComMainImagePreview(null); setNewComMainImageFile(null); setGalleryItems([]); setShowCommerceModal(true); }}><Plus size={18} /> Alta de Comercio</button>
+                    <button className="btn-add" onClick={() => { setEditingCommerceId(null); setNewComName(''); setNewComLocalityId(userRole === 'localadmin' ? assignedLocalityId : ''); setNewComRubroId(''); setNewComWhatsapp(''); setNewComAddress(''); setNewComMapsUrl(''); setNewComVideoUrl(''); setNewComDescription(''); setNewComKeywords([]); setTagInput(''); setNewComInstagram(''); setNewComFacebook(''); setNewComWebsite(''); setNewComMainImagePreview(null); setNewComMainImageFile(null); setGalleryItems([]); setShowCommerceModal(true); }}><Plus size={18} /> Alta de Comercio</button>
                   </div>
 
                   {isLoadingComercios ? (
@@ -2590,6 +2594,11 @@ function App() {
                           <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>URL de Google Maps (Opcional)</label>
                           <input type="text" value={newComMapsUrl} onChange={e => setNewComMapsUrl(e.target.value)} placeholder="Ej: https://maps.app.goo.gl/..." style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none' }} />
                         </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>URL de Video MP4 (Opcional)</label>
+                        <input type="text" value={newComVideoUrl} onChange={e => setNewComVideoUrl(e.target.value)} placeholder="Ej: https://midominio.com/video.mp4" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', marginBottom: '15px' }} />
                       </div>
 
                       <div>
@@ -5273,11 +5282,19 @@ function App() {
                   )}
                 </div>
 
-                {(selectedBusiness.gallery_images && selectedBusiness.gallery_images.length > 0) && (
+                {((selectedBusiness.gallery_images && selectedBusiness.gallery_images.length > 0) || selectedBusiness.video_url) && (
                   <>
-                    <h4 style={{ fontSize: '1.1rem', margin: '20px 0 10px 0', color: isDark ? '#fff' : '#0f172a' }}>Galería de Fotos</h4>
+                    <h4 style={{ fontSize: '1.1rem', margin: '20px 0 10px 0', color: isDark ? '#fff' : '#0f172a' }}>Galería de Fotos y Video</h4>
                     <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', paddingBottom: '15px', paddingRight: '20px', scrollbarWidth: 'auto', WebkitOverflowScrolling: 'touch', msOverflowStyle: 'auto', flexWrap: 'nowrap' }}>
-                      {selectedBusiness.gallery_images.map((url, n) => (
+                      {selectedBusiness.video_url && (
+                        <div style={{ width: '140px', height: '140px', flex: '0 0 auto', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.2)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, position: 'relative', cursor: 'pointer', background: '#000' }} onClick={() => { setViewerTitle('Video Presentación'); setViewerUrl(selectedBusiness.video_url); }}>
+                          <video src={selectedBusiness.video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} muted playsInline />
+                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(99, 102, 241, 0.9)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                            <Play size={20} style={{ marginLeft: '4px' }} />
+                          </div>
+                        </div>
+                      )}
+                      {selectedBusiness.gallery_images && selectedBusiness.gallery_images.map((url, n) => (
                         <div key={n} style={{ width: '140px', height: '140px', flex: '0 0 auto', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.2)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}` }}>
                           <img src={url} alt={`Gallery ${n}`} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => { setViewerTitle(`Foto ${n + 1}`); setViewerUrl(url); }} />
                         </div>
@@ -5293,16 +5310,13 @@ function App() {
                   }}>
                     <MessageCircle size={22} /> WhatsApp
                   </button>
-                  <button className="action-btn" style={{ flex: 1, marginTop: '25px', padding: '16px', fontSize: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a', border: 'none', cursor: 'pointer' }} onClick={() => {
-                    if (selectedBusiness.maps_url) {
+                  {selectedBusiness.maps_url && (
+                    <button className="action-btn" style={{ flex: 1, marginTop: '25px', padding: '16px', fontSize: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a', border: 'none', cursor: 'pointer' }} onClick={() => {
                       window.open(selectedBusiness.maps_url, '_blank');
-                    } else {
-                      const query = encodeURIComponent(`${selectedBusiness.address || selectedBusiness.name} ${selectedBusiness.localidades?.name || ''}`);
-                      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-                    }
-                  }}>
-                    <Navigation size={22} /> Mapa
-                  </button>
+                    }}>
+                      <Navigation size={22} /> Mapa
+                    </button>
+                  )}
                   <button className="action-btn" style={{ flex: 1, marginTop: '25px', padding: '16px', fontSize: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: isDark ? '#fff' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); handleShare(selectedBusiness); }}>
                     <Share2 size={22} /> Compartir
                   </button>
@@ -5530,6 +5544,8 @@ function App() {
                   ) : (
                     sanitized.match(/\.(jpeg|jpg|gif|png|webp|avif|jfif)(\?.*)?$/i) ? (
                       <img src={sanitized} alt={viewerTitle} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} />
+                    ) : sanitized.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
+                      <video src={sanitized} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%', outline: 'none' }} />
                     ) : (
                       <iframe src={sanitized} style={{ width: '100%', height: '100%', border: 'none' }} title={viewerTitle} allowFullScreen></iframe>
                     )
