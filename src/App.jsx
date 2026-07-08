@@ -678,8 +678,18 @@ function App() {
 
     const logAppOpen = async () => {
       const lastOpen = localStorage.getItem('dcompras_last_open');
+      const lastCountOpen = localStorage.getItem('dcompras_last_count_open');
       const now = Date.now();
-      // Registrar apertura máximo una vez por hora
+
+      // Incrementar contador de aperturas (máximo 1 vez cada 5 minutos para evitar múltiples conteos por recargas rápidas)
+      if (!lastCountOpen || (now - parseInt(lastCountOpen)) > 300000) {
+        let openCount = parseInt(localStorage.getItem('dcompras_open_count') || '0');
+        openCount++;
+        localStorage.setItem('dcompras_open_count', openCount.toString());
+        localStorage.setItem('dcompras_last_count_open', now.toString());
+      }
+
+      // Registrar apertura máximo una vez por hora en analytics
       if (!lastOpen || (now - parseInt(lastOpen)) > 3600000) {
         await supabase.from('analytics_events').insert([{ event_type: 'app_open' }]);
         localStorage.setItem('dcompras_last_open', now.toString());
@@ -699,18 +709,23 @@ function App() {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      // Mostrar el modal cada tanto (ej: cada 3 días)
-      const lastPrompt = localStorage.getItem('dcompras_install_prompt_last');
-      const now = Date.now();
-      const threeDays = 3 * 24 * 60 * 60 * 1000;
+      const openCount = parseInt(localStorage.getItem('dcompras_open_count') || '0');
       
-      if (!lastPrompt || (now - parseInt(lastPrompt)) > threeDays) {
-        setTimeout(() => {
-          // Solo mostramos si no está instalada
-          if (!window.matchMedia('(display-mode: standalone)').matches) {
-            setShowInstallModal(true);
-          }
-        }, 5000); 
+      // Mostrar el modal recién a partir de la tercera apertura
+      if (openCount >= 3) {
+        // Mostrar el modal cada tanto (ej: cada 3 días)
+        const lastPrompt = localStorage.getItem('dcompras_install_prompt_last');
+        const now = Date.now();
+        const threeDays = 3 * 24 * 60 * 60 * 1000;
+        
+        if (!lastPrompt || (now - parseInt(lastPrompt)) > threeDays) {
+          setTimeout(() => {
+            // Solo mostramos si no está instalada
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+              setShowInstallModal(true);
+            }
+          }, 5000); 
+        }
       }
     });
 
