@@ -364,10 +364,10 @@ function App() {
   const [editorBg, setEditorBg] = useState('#1e293b');
   const [editorBgType, setEditorBgType] = useState('solid'); // 'solid' | 'gradient'
   const [editorTexts, setEditorTexts] = useState([]);
-  const [editorImage, setEditorImage] = useState(null); // { src, x, y, width, height }
+  const [editorImages, setEditorImages] = useState([]); // array of { id, src, x, y, width, height }
   const [editorActiveTool, setEditorActiveTool] = useState(null); // 'bg' | 'text' | 'image'
   const [editorSelectedTextId, setEditorSelectedTextId] = useState(null);
-  const [editorSelectedElement, setEditorSelectedElement] = useState(null); // 'image' | textId
+  const [editorSelectedElement, setEditorSelectedElement] = useState(null); // image_id | textId
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const editorCanvasRef = useRef(null);
   const editorDragRef = useRef({ active: false, type: null, id: null, startX: 0, startY: 0, origX: 0, origY: 0 });
@@ -447,6 +447,10 @@ function App() {
   };
 
   const handleEditorImageUpload = (file) => {
+    if (editorImages.length >= 4) {
+      alert('Máximo 4 imágenes permitidas.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new window.Image();
@@ -456,18 +460,29 @@ function App() {
         const ratio = img.height / img.width;
         const w = Math.min(maxW, 60);
         const h = w * ratio;
-        setEditorImage({
+        const newId = 'img-' + Date.now().toString();
+        const offsetX = Math.random() * 10 - 5;
+        const offsetY = Math.random() * 10 - 5;
+        setEditorImages(prev => [...prev, {
+          id: newId,
           src: ev.target.result,
-          x: 50 - w / 2,
-          y: 50 - h / 2,
+          x: 50 - w / 2 + offsetX,
+          y: 50 - h / 2 + offsetY,
           width: w,
           height: h,
-        });
-        setEditorSelectedElement('image');
+        }]);
+        setEditorSelectedElement(newId);
       };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
+  };
+  
+  const handleEditorRemoveImage = (id) => {
+    setEditorImages(prev => prev.filter(img => img.id !== id));
+    if (editorSelectedElement === id) {
+      setEditorSelectedElement(null);
+    }
   };
 
   // Drag handling for text and image elements
@@ -489,9 +504,10 @@ function App() {
       setEditorSelectedTextId(id);
       setEditorSelectedElement(id);
     } else if (type === 'image') {
-      if (!editorImage) return;
-      editorDragRef.current = { active: true, type: 'image', id: null, startX: x, startY: y, origX: editorImage.x, origY: editorImage.y };
-      setEditorSelectedElement('image');
+      const img = editorImages.find(i => i.id === id);
+      if (!img) return;
+      editorDragRef.current = { active: true, type: 'image', id, startX: x, startY: y, origX: img.x, origY: img.y };
+      setEditorSelectedElement(id);
       setEditorSelectedTextId(null);
     }
   };
@@ -516,29 +532,30 @@ function App() {
       if (drag.type === 'text') {
         setEditorTexts(prev => prev.map(t => t.id === drag.id ? { ...t, x: newX, y: newY } : t));
       } else if (drag.type === 'image') {
-        setEditorImage(prev => prev ? { ...prev, x: newX, y: newY } : null);
+        setEditorImages(prev => prev.map(i => i.id === drag.id ? { ...i, x: newX, y: newY } : i));
       }
     }
 
-    if (resize.active && editorImage) {
+    if (resize.active && resize.id) {
       const dx = x - resize.startX;
       const dy = y - resize.startY;
       const delta = Math.max(dx, dy);
       const newW = Math.max(10, Math.min(95, resize.origW + delta));
       const ratio = resize.origH / resize.origW;
-      setEditorImage(prev => prev ? { ...prev, width: newW, height: newW * ratio } : null);
+      setEditorImages(prev => prev.map(i => i.id === resize.id ? { ...i, width: newW, height: newW * ratio } : i));
     }
-  }, [editorImage]);
+  }, [editorImages]);
 
   const handleEditorPointerUp = useCallback(() => {
     editorDragRef.current = { ...editorDragRef.current, active: false };
     editorResizeRef.current = { ...editorResizeRef.current, active: false };
   }, []);
 
-  const handleEditorResizeStart = (e) => {
+  const handleEditorResizeStart = (e, id) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!editorImage) return;
+    const img = editorImages.find(i => i.id === id);
+    if (!img) return;
     const canvas = editorCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -546,7 +563,7 @@ function App() {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
-    editorResizeRef.current = { active: true, startX: x, startY: y, origW: editorImage.width, origH: editorImage.height };
+    editorResizeRef.current = { active: true, id, startX: x, startY: y, origW: img.width, origH: img.height };
   };
 
   // Attach global listeners for drag
@@ -606,7 +623,7 @@ function App() {
     setEditorBg('#1e293b');
     setEditorBgType('solid');
     setEditorTexts([]);
-    setEditorImage(null);
+    setEditorImages([]);
     setEditorActiveTool(null);
     setEditorSelectedTextId(null);
     setEditorSelectedElement(null);
@@ -4062,42 +4079,43 @@ function App() {
                           onClick={() => { setEditorSelectedTextId(null); setEditorSelectedElement(null); }}
                         >
                           {/* Empty state hint */}
-                          {editorTexts.length === 0 && !editorImage && (
+                          {editorTexts.length === 0 && editorImages.length === 0 && (
                             <div className="offer-editor-empty">
                               <Paintbrush size={40} color={isDark ? '#fff' : '#64748b'} />
                               <span style={{ color: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>Usá las herramientas de abajo para crear tu diseño</span>
                             </div>
                           )}
 
-                          {/* Render image element */}
-                          {editorImage && (
+                          {/* Render image elements */}
+                          {editorImages.map(img => (
                             <div
-                              className={`offer-editor-image-element ${editorSelectedElement === 'image' ? 'selected' : ''}`}
+                              key={img.id}
+                              className={`offer-editor-image-element ${editorSelectedElement === img.id ? 'selected' : ''}`}
                               style={{
-                                left: `${editorImage.x}%`,
-                                top: `${editorImage.y}%`,
-                                width: `${editorImage.width}%`,
-                                height: `${editorImage.height}%`,
+                                left: `${img.x}%`,
+                                top: `${img.y}%`,
+                                width: `${img.width}%`,
+                                height: `${img.height}%`,
                               }}
-                              onMouseDown={(e) => handleEditorPointerDown(e, 'image', null)}
-                              onTouchStart={(e) => handleEditorPointerDown(e, 'image', null)}
-                              onClick={(e) => { e.stopPropagation(); setEditorSelectedElement('image'); setEditorSelectedTextId(null); }}
+                              onMouseDown={(e) => handleEditorPointerDown(e, 'image', img.id)}
+                              onTouchStart={(e) => handleEditorPointerDown(e, 'image', img.id)}
+                              onClick={(e) => { e.stopPropagation(); setEditorSelectedElement(img.id); setEditorSelectedTextId(null); }}
                             >
-                              <img src={editorImage.src} alt="Elemento" />
-                              {editorSelectedElement === 'image' && (
+                              <img src={img.src} alt="Elemento" />
+                              {editorSelectedElement === img.id && (
                                 <>
                                   <div
                                     className="resize-handle"
-                                    onMouseDown={handleEditorResizeStart}
-                                    onTouchStart={handleEditorResizeStart}
+                                    onMouseDown={(e) => handleEditorResizeStart(e, img.id)}
+                                    onTouchStart={(e) => handleEditorResizeStart(e, img.id)}
                                   />
-                                  <div className="delete-img-btn" onClick={(e) => { e.stopPropagation(); setEditorImage(null); setEditorSelectedElement(null); }}>
+                                  <div className="delete-img-btn" onClick={(e) => { e.stopPropagation(); handleEditorRemoveImage(img.id); }}>
                                     <X size={12} />
                                   </div>
                                 </>
                               )}
                             </div>
-                          )}
+                          ))}
 
                           {/* Render text elements */}
                           {editorTexts.map(t => (
@@ -4248,9 +4266,9 @@ function App() {
                           <input id="editor-img-upload" type="file" accept="image/*" hidden onChange={(e) => {
                             if (e.target.files && e.target.files[0]) handleEditorImageUpload(e.target.files[0]);
                           }} />
-                          <label htmlFor="editor-img-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1'}`, borderRadius: '14px', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', transition: 'all 0.2s ease' }}>
+                          <label htmlFor="editor-img-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1'}`, borderRadius: '14px', cursor: editorImages.length >= 4 ? 'not-allowed' : 'pointer', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', transition: 'all 0.2s ease', opacity: editorImages.length >= 4 ? 0.5 : 1 }}>
                             <Camera size={28} color="#6366f1" style={{ marginBottom: '8px' }} />
-                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>{editorImage ? 'Reemplazar imagen' : 'Subir imagen'}</span>
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>{editorImages.length >= 4 ? 'Límite alcanzado' : `Agregar imagen (${editorImages.length}/4)`}</span>
                             <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>Podés moverla y redimensionarla en el lienzo</span>
                           </label>
                         </div>
@@ -4809,7 +4827,7 @@ function App() {
           </div>
         )}
 
-        {(!isInstalled && deferredPrompt) && (
+        {(!isInstalled && deferredPrompt && parseInt(localStorage.getItem('dcompras_open_count') || '0') >= 3) && (
           <div className="install-banner animate-in" style={{ padding: '0 20px', marginTop: '15px' }}>
             <button 
               onClick={async () => {
