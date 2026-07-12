@@ -258,6 +258,7 @@ function App() {
   const [isLoadingComercios, setIsLoadingComercios] = useState(false);
   const [isSavingCommerce, setIsSavingCommerce] = useState(false);
   const [newComName, setNewComName] = useState('');
+  const [newComStatus, setNewComStatus] = useState('active');
   const [newComSlug, setNewComSlug] = useState('');
   const [newComLocalityId, setNewComLocalityId] = useState('');
   const [newComRubroId, setNewComRubroId] = useState('');
@@ -1620,7 +1621,7 @@ function App() {
       video_url: newComVideoUrl,
       latitud: latitud,
       longitud: longitud,
-      status: 'active',
+      status: newComStatus,
       gallery_images: finalGalleryUrls,
       business_hours: newComHours,
       description: newComDescription,
@@ -1645,6 +1646,7 @@ function App() {
     if (!error) {
       setShowCommerceModal(false);
       setNewComName('');
+      setNewComStatus('active');
       setNewComWhatsapp('');
       setNewComAddress('');
       setNewComMapsUrl('');
@@ -1661,6 +1663,16 @@ function App() {
     } else {
       console.error('Error guardando comercio:', error);
       alert('Hubo un error al guardar el comercio.');
+    }
+  };
+
+  const handleToggleCommerceStatus = async (commerce) => {
+    const newStatus = commerce.status === 'active' ? 'inactive' : 'active';
+    const { error } = await supabase.from('comercios').update({ status: newStatus }).eq('id', commerce.id);
+    if (!error) {
+      setComercios(comercios.map(c => c.id === commerce.id ? { ...c, status: newStatus } : c));
+    } else {
+      alert("Error al actualizar el estado del comercio.");
     }
   };
 
@@ -1744,6 +1756,7 @@ function App() {
       setActiveTab('comercios');
       setEditingCommerceId(commerce.id);
       setNewComName(commerce.name);
+      setNewComStatus(commerce.status || 'active');
       setNewComSlug(commerce.slug || '');
       setNewComLocalityId(commerce.locality_id);
       setNewComRubroId(commerce.rubro_id);
@@ -2305,7 +2318,12 @@ function App() {
                             <td style={{ textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button className="edit-btn" onClick={() => handleEditCommerceClick(item)}>Editar</button>
-                                <button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button>
+                                {(userRole === 'superadmin' || userRole === 'adminlocal') && (
+                                  <button className={`edit-btn ${item.status === 'active' ? 'active-toggle' : 'inactive-toggle'}`} onClick={() => handleToggleCommerceStatus(item)} style={{ color: item.status === 'active' ? '#fb7185' : '#10b981' }}>{item.status === 'active' ? 'Desactivar' : 'Activar'}</button>
+                                )}
+                                {userRole === 'superadmin' && (
+                                  <button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -2518,7 +2536,12 @@ function App() {
                                     <td style={{ textAlign: 'right' }}>
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                         <button className="edit-btn" onClick={() => handleEditCommerceClick(item)}>Gestionar</button>
-                                        <button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button>
+                                        {(userRole === 'superadmin' || userRole === 'adminlocal') && (
+                                          <button className={`edit-btn ${item.status === 'active' ? 'active-toggle' : 'inactive-toggle'}`} onClick={() => handleToggleCommerceStatus(item)} style={{ color: item.status === 'active' ? '#fb7185' : '#10b981' }}>{item.status === 'active' ? 'Desactivar' : 'Activar'}</button>
+                                        )}
+                                        {userRole === 'superadmin' && (
+                                          <button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button>
+                                        )}
                                       </div>
                                     </td>
                                   </tr>
@@ -2533,7 +2556,7 @@ function App() {
                         <div style={{ padding: '16px 32px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0'}` }}>
                           <h3 className="font-outfit" style={{ margin: 0, color: '#94a3b8', fontSize: '1.1rem' }}>Sin localidad asignada</h3>
                         </div>
-                        <div className="table-wrapper"><table className="data-table"><thead><tr><th>Comercio</th><th>Rubro</th><th>Vencimiento</th><th>Estado</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead><tbody>{ungrouped.map((item, i) => (<tr key={item.id || i}><td style={{ fontWeight: 600, color: isDark ? '#fff' : '#0f172a' }}>{item.name}</td><td>-</td><td>-</td><td>-</td><td style={{ textAlign: 'right' }}><div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}><button className="edit-btn" onClick={() => handleEditCommerceClick(item)}>Gestionar</button><button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button></div></td></tr>))}</tbody></table></div>
+                        <div className="table-wrapper"><table className="data-table"><thead><tr><th>Comercio</th><th>Rubro</th><th>Vencimiento</th><th>Estado</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead><tbody>{ungrouped.map((item, i) => (<tr key={item.id || i}><td style={{ fontWeight: 600, color: isDark ? '#fff' : '#0f172a' }}>{item.name}</td><td>-</td><td>-</td><td>-</td><td style={{ textAlign: 'right' }}><div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}><button className="edit-btn" onClick={() => handleEditCommerceClick(item)}>Gestionar</button>{(userRole === 'superadmin' || userRole === 'adminlocal') && (<button className={`edit-btn ${item.status === 'active' ? 'active-toggle' : 'inactive-toggle'}`} onClick={() => handleToggleCommerceStatus(item)} style={{ color: item.status === 'active' ? '#fb7185' : '#10b981' }}>{item.status === 'active' ? 'Desactivar' : 'Activar'}</button>)}{userRole === 'superadmin' && <button className="delete-btn" title="Eliminar comercio" onClick={() => handleDeleteCommerce(item)}><Trash2 size={16} /></button>}</div></td></tr>))}</tbody></table></div>
                       </section>
                     )];
                   })()}
@@ -2628,10 +2651,12 @@ function App() {
                         </div>
                       </div>
 
-                      <div>
-                        <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>URL de Video MP4 (Opcional)</label>
-                        <input type="text" value={newComVideoUrl} onChange={e => setNewComVideoUrl(e.target.value)} placeholder="Ej: https://midominio.com/video.mp4" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', marginBottom: '15px' }} />
-                      </div>
+                      {(userRole === 'superadmin' || userRole === 'adminlocal') && (
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>URL de Video MP4 (Opcional)</label>
+                          <input type="text" value={newComVideoUrl} onChange={e => setNewComVideoUrl(e.target.value)} placeholder="Ej: https://midominio.com/video.mp4" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}`, color: isDark ? '#fff' : '#0f172a', outline: 'none', marginBottom: '15px' }} />
+                        </div>
+                      )}
 
                       <div>
                         <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Breve Descripción del Comercio</label>
