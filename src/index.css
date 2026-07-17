@@ -1790,11 +1790,28 @@ h4,
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+  
+  /* Force GPU compositing layer to prevent ghosting/smearing glitches on scroll or keyboard open */
+  .public-layout, .main-content {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Explicitly remove backdrop-filter on specific problematic classes to avoid specificity issues */
+  .public-header, .bottom-nav, .public-search input {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .public-header {
     background: rgba(10, 14, 26, 0.98) !important;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
   .bottom-nav {
     background: rgba(15, 23, 42, 0.98) !important;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
   .public-search input {
     background: rgba(255, 255, 255, 0.15) !important;
