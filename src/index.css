@@ -1792,7 +1792,7 @@ h4,
   }
   
   /* Force GPU compositing layer to prevent ghosting/smearing glitches on scroll or keyboard open */
-  .public-layout, .main-content {
+  .main-content {
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
   }
