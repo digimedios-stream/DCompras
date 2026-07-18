@@ -876,7 +876,7 @@ function App() {
       } else if (data.role === 'historian') {
         setActiveTab('turismo');
       }
-      setView('admin');
+      setView('public');
     } else {
       // Si el usuario está en Auth pero no tiene Perfil registrado, lo sacamos por seguridad
       console.error('El usuario no posee perfil asociado.');
