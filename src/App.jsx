@@ -648,11 +648,26 @@ function App() {
   const [analyticsStats, setAnalyticsStats] = useState({ opens: 0, installs: 0 });
 
   const fetchAnalytics = async () => {
-    const { data, error } = await supabase.from('analytics_events').select('event_type');
-    if (!error && data) {
-      const opens = data.filter(d => d.event_type === 'app_open').length;
-      const installs = data.filter(d => d.event_type === 'app_install').length;
-      setAnalyticsStats({ opens, installs });
+    try {
+      const { count: opens, error: errOpens } = await supabase
+        .from('analytics_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', 'app_open');
+
+      const { count: installs, error: errInstalls } = await supabase
+        .from('analytics_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', 'app_install');
+
+      if (errOpens) console.error('Error fetching opens:', errOpens);
+      if (errInstalls) console.error('Error fetching installs:', errInstalls);
+
+      setAnalyticsStats({ 
+        opens: opens || 0, 
+        installs: installs || 0 
+      });
+    } catch (err) {
+      console.error('Unexpected error fetching analytics:', err);
     }
   };
 
