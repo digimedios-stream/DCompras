@@ -1887,7 +1887,8 @@ h4,
 /* Canvas Wrapper */
 .offer-editor-canvas-wrapper {
   position: relative;
-  width: 100%;
+  width: 85%;
+  margin: 0 auto;
   aspect-ratio: 9 / 16;
   border-radius: 16px;
   overflow: hidden;
