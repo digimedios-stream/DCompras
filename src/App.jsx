@@ -458,9 +458,10 @@ function App() {
       img.onload = () => {
         // Scale image to fit in canvas (max 60% of canvas width)
         const maxW = 60;
-        const ratio = img.height / img.width;
+        const imgAspect = img.height / img.width;
+        const canvasAspect = 9 / 16;
         const w = Math.min(maxW, 60);
-        const h = w * ratio;
+        const h = w * imgAspect * canvasAspect;
         const newId = 'img-' + Date.now().toString();
         const offsetX = Math.random() * 10 - 5;
         const offsetY = Math.random() * 10 - 5;
@@ -471,6 +472,7 @@ function App() {
           y: 50 - h / 2 + offsetY,
           width: w,
           height: h,
+          aspect: imgAspect,
         }]);
         setEditorSelectedElement(newId);
       };
@@ -542,8 +544,9 @@ function App() {
       const dy = y - resize.startY;
       const delta = Math.max(dx, dy);
       const newW = Math.max(10, Math.min(95, resize.origW + delta));
-      const ratio = resize.origH / resize.origW;
-      setEditorImages(prev => prev.map(i => i.id === resize.id ? { ...i, width: newW, height: newW * ratio } : i));
+      const imgAspect = resize.aspect || 1;
+      const newH = newW * imgAspect * (9 / 16);
+      setEditorImages(prev => prev.map(i => i.id === resize.id ? { ...i, width: newW, height: newH } : i));
     }
   }, [editorImages]);
 
@@ -564,7 +567,8 @@ function App() {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
-    editorResizeRef.current = { active: true, id, startX: x, startY: y, origW: img.width, origH: img.height };
+    const aspect = img.aspect || ((img.height / img.width) * (16 / 9));
+    editorResizeRef.current = { active: true, id, startX: x, startY: y, origW: img.width, origH: img.height, aspect };
   };
 
   // Attach global listeners for drag
@@ -4050,8 +4054,8 @@ function App() {
 
           {/* MODAL OFERTAS FLASH */}
           {showOfertaModal && (
-            <div className="gallery-modal" style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '28px', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '92vh', overflowY: 'auto', overscrollBehavior: 'contain', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <div className="gallery-modal" style={{ justifyContent: 'flex-start', alignItems: 'center', padding: '16px 8px' }}>
+              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '24px 20px', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overscrollBehavior: 'contain', margin: 'auto 0', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
                 <div className="gallery-header" style={{ marginBottom: '20px' }}>
                   <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a' }}>Publicar Oferta Flash</h3>
                   <div className="close-gallery" onClick={() => { setShowOfertaModal(false); resetEditor(); }}><X size={24} /></div>
