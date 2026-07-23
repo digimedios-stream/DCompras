@@ -4054,8 +4054,8 @@ function App() {
 
           {/* MODAL OFERTAS FLASH */}
           {showOfertaModal && (
-            <div className="gallery-modal" style={{ justifyContent: 'flex-start', alignItems: 'center', padding: '16px 8px' }}>
-              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '24px 20px', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overscrollBehavior: 'contain', margin: 'auto 0', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <div className="gallery-modal" style={{ justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ background: isDark ? '#0f172a' : '#ffffff', padding: '24px 20px', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overscrollBehavior: 'contain', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
                 <div className="gallery-header" style={{ marginBottom: '20px' }}>
                   <h3 className="font-outfit" style={{ color: isDark ? '#fff' : '#0f172a' }}>Publicar Oferta Flash</h3>
                   <div className="close-gallery" onClick={() => { setShowOfertaModal(false); resetEditor(); }}><X size={24} /></div>

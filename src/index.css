@@ -1791,11 +1791,7 @@ h4,
     -webkit-backdrop-filter: none !important;
   }
   
-  /* Force GPU compositing layer to prevent ghosting/smearing glitches on scroll or keyboard open */
-  .main-content {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-  }
+  /* Remove transform translateZ on main-content so position:fixed modals anchor to viewport */
 
   /* Explicitly remove backdrop-filter on specific problematic classes to avoid specificity issues */
   .public-header, .bottom-nav, .public-search input {
