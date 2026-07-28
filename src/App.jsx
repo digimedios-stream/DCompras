@@ -4736,7 +4736,7 @@ function App() {
 
         {/* MURO DE OFERTAS FLASH (Estilo Stories) */}
         {groupedOfertas.length > 0 && (
-          <div className="ofertas-flash-container" style={{ padding: '20px 20px 0 20px', overflowX: 'auto', display: 'flex', gap: '15px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+          <div className="ofertas-flash-container" style={{ padding: '20px 20px 0 20px', overflowX: 'auto', display: 'flex', gap: '18px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
             {groupedOfertas.map((group, index) => {
               const allSeen = group.offers.every(o => seenOfertas.includes(o.id));
               const firstUnseenOrFirst = group.offers.find(o => !seenOfertas.includes(o.id)) || group.offers[0];
@@ -4758,8 +4758,8 @@ function App() {
                 style={{ flexShrink: 0, textAlign: 'center', cursor: 'pointer' }}
               >
                 <div style={{ 
-                  width: '72px', 
-                  height: '72px', 
+                  width: '86px', 
+                  height: '86px', 
                   borderRadius: '50%', 
                   padding: '3px', 
                   background: allSeen 
@@ -4784,11 +4784,11 @@ function App() {
                 </div>
                 <span style={{ 
                   display: 'block', 
-                  fontSize: '0.7rem', 
-                  marginTop: '6px', 
+                  fontSize: '0.75rem', 
+                  marginTop: '7px', 
                   color: isDark ? '#e2e8f0' : '#1e293b', 
                   fontWeight: 600,
-                  maxWidth: '72px',
+                  maxWidth: '86px',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
@@ -4796,7 +4796,7 @@ function App() {
                   {group.commerce?.name || "Novedades"}
                 </span>
                 <div style={{ 
-                  fontSize: '0.6rem', 
+                  fontSize: '0.65rem', 
                   color: '#fb7185', 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -4804,7 +4804,7 @@ function App() {
                   gap: '2px', 
                   fontWeight: 800 
                 }}>
-                  <Zap size={8} fill="#fb7185" /> {group.offers.length > 1 ? 'OFERTAS' : 'OFERTA'}
+                  <Zap size={10} fill="#fb7185" /> {group.offers.length > 1 ? 'OFERTAS' : 'OFERTA'}
                 </div>
               </div>
             )})}
