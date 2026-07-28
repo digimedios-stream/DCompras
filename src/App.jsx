@@ -16,6 +16,20 @@ import {
   Type, Paintbrush, Upload, ClipboardEdit, Wand2, Play
 } from 'lucide-react';
 
+const Instagram = ({ size = 20, style = {} }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const Facebook = ({ size = 20, style = {} }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+
 const removeAccents = (str) => {
   if (!str) return '';
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -4595,6 +4609,10 @@ function App() {
     const currentLocalityName = currentLocalityData.name || 'Selecciona tu localidad';
     const currentLocalityProv = currentLocalityData.province || '';
 
+    // Enlaces oficiales de Redes Sociales
+    const officialInstagramUrl = 'https://www.instagram.com/dcompras26/';
+    const officialFacebookUrl = 'https://www.facebook.com/dcomprasapp';
+
     const handleShare = async (biz, isAtractivo = false) => {
       const typeParam = isAtractivo ? 'atractivo' : 'comercio';
       const shareUrl = `${window.location.origin}${window.location.pathname}?${typeParam}=${biz.slug || biz.id}`;
@@ -5262,6 +5280,33 @@ function App() {
 
             <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>¿Necesitas ayuda o quieres anunciar tu negocio?</p>
 
+            {/* TARJETA REDES SOCIALES (Opción C) */}
+            <div className="social-info-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '16px' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(240,148,51,0.15) 0%, rgba(220,39,67,0.15) 50%, rgba(24,119,242,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Share2 size={24} style={{ color: '#ec4899' }} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, color: isDark ? '#fff' : '#0f172a', fontSize: '1.05rem' }}>¡Nuestra Comunidad!</h4>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Seguinos para enterarte de ofertas flash y sorteos.</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => window.open(officialInstagramUrl, '_blank')}
+                  className="social-info-btn ig"
+                >
+                  <Instagram size={18} /> Instagram
+                </button>
+                <button
+                  onClick={() => window.open(officialFacebookUrl, '_blank')}
+                  className="social-info-btn fb"
+                >
+                  <Facebook size={18} /> Facebook
+                </button>
+              </div>
+            </div>
+
             <div style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', padding: '25px', borderRadius: '24px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}`, marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -5332,7 +5377,7 @@ function App() {
                       }}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', borderRadius: '12px', background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)', color: '#fff', border: 'none', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
                     >
-                      <Globe size={18} /> Instagram
+                      <Instagram size={18} /> Instagram
                     </button>
                   )}
                   {selectedBusiness.facebook_url && (
@@ -5343,7 +5388,7 @@ function App() {
                       }}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', borderRadius: '12px', background: '#1877F2', color: '#fff', border: 'none', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
                     >
-                      <Globe size={18} /> Facebook
+                      <Facebook size={18} /> Facebook
                     </button>
                   )}
                   {selectedBusiness.website_url && (
@@ -5405,6 +5450,16 @@ function App() {
 
         <footer style={{ textAlign: 'center', padding: '40px 20px 100px 20px', background: isDark ? 'transparent' : '#f8fafc' }}>
           <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px' }}>D'Compras © 2026</p>
+          
+          <div className="social-footer-container">
+            <a href={officialInstagramUrl} target="_blank" rel="noopener noreferrer" className="social-footer-btn ig" title="Seguinos en Instagram">
+              <Instagram size={20} />
+            </a>
+            <a href={officialFacebookUrl} target="_blank" rel="noopener noreferrer" className="social-footer-btn fb" title="Seguinos en Facebook">
+              <Facebook size={20} />
+            </a>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '12px' }}>
             <span onClick={() => setView('privacy')} style={{ fontSize: '0.75rem', color: '#6366f1', cursor: 'pointer', textDecoration: 'underline' }}>Política de Privacidad</span>
             <span onClick={() => setView('terms')} style={{ fontSize: '0.75rem', color: '#6366f1', cursor: 'pointer', textDecoration: 'underline' }}>Términos y Condiciones</span>
