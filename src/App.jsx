@@ -1765,22 +1765,39 @@ function App() {
     }
   };
 
-  const handleMainImageChange = (e) => {
+  const handleMainImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setNewComMainImageFile(file);
-      setNewComMainImagePreview(URL.createObjectURL(file));
+      try {
+        const compressedFile = await convertToWebP(file);
+        setNewComMainImageFile(compressedFile);
+        setNewComMainImagePreview(URL.createObjectURL(compressedFile));
+      } catch (err) {
+        console.error("Error compressing main image:", err);
+        setNewComMainImageFile(file);
+        setNewComMainImagePreview(URL.createObjectURL(file));
+      }
     }
   };
 
-  const handleGalleryChange = (e) => {
+  const handleGalleryChange = async (e) => {
     const files = Array.from(e.target.files);
     const maxFiles = 6 - galleryItems.length;
     const allowedFiles = files.slice(0, maxFiles);
 
     if (allowedFiles.length > 0) {
-      const newItems = allowedFiles.map(f => ({ url: URL.createObjectURL(f), file: f }));
-      setGalleryItems(prev => [...prev, ...newItems]);
+      const compressedItems = await Promise.all(
+        allowedFiles.map(async (f) => {
+          try {
+            const compressed = await convertToWebP(f);
+            return { url: URL.createObjectURL(compressed), file: compressed };
+          } catch (err) {
+            console.error("Error compressing gallery image:", err);
+            return { url: URL.createObjectURL(f), file: f };
+          }
+        })
+      );
+      setGalleryItems(prev => [...prev, ...compressedItems]);
     }
   };
 
@@ -2118,26 +2135,66 @@ function App() {
 
     const now = new Date();
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const today = days[now.getDay()];
-    const schedule = hours[today];
-
-    if (!schedule || !schedule.active) return { open: false, label: 'Cerrado' };
-
-    // Smart detection for 24-hour operation (explicit 00:00 - 00:00 or 00:00 - 23:59)
-    const is24hs = (schedule.open === '00:00' && (schedule.close === '00:00' || schedule.close === '23:59'));
-    if (is24hs) return { open: true, label: 'Abierto 24h' };
+    const todayIdx = now.getDay();
+    const today = days[todayIdx];
+    const yesterday = days[(todayIdx + 6) % 7];
 
     const currentTime = now.getHours() * 100 + now.getMinutes();
 
-    const checkRange = (start, end) => {
+    const checkRangeToday = (start, end) => {
       if (!start || !end) return false;
       const s = parseInt(start.replace(':', ''));
       const e = parseInt(end.replace(':', ''));
-      return currentTime >= s && currentTime <= e;
+      if (s < e) {
+        return currentTime >= s && currentTime <= e;
+      } else {
+        // Range crosses midnight (e.g. 16:00 to 03:00)
+        // Today it is open from start time (16:00) until midnight
+        return currentTime >= s;
+      }
     };
 
-    const isOpen = checkRange(schedule.open, schedule.close) || checkRange(schedule.open2, schedule.close2);
-    return { open: isOpen, label: isOpen ? 'Abierto' : 'Cerrado' };
+    const checkRangeYesterday = (start, end) => {
+      if (!start || !end) return false;
+      const s = parseInt(start.replace(':', ''));
+      const e = parseInt(end.replace(':', ''));
+      if (s > e) {
+        // Range crossed midnight (e.g. 16:00 to 03:00)
+        // Today (early morning) it is open from midnight until end time (03:00)
+        return currentTime <= e;
+      }
+      return false;
+    };
+
+    // Check Today's schedule
+    const scheduleToday = hours[today];
+    let isOpenToday = false;
+    if (scheduleToday && scheduleToday.active) {
+      const is24hs = (scheduleToday.open === '00:00' && (scheduleToday.close === '00:00' || scheduleToday.close === '23:59'));
+      if (is24hs) {
+        isOpenToday = true;
+      } else {
+        isOpenToday = checkRangeToday(scheduleToday.open, scheduleToday.close) ||
+                      checkRangeToday(scheduleToday.open2, scheduleToday.close2);
+      }
+    }
+
+    // Check Yesterday's schedule for midnight overflow
+    const scheduleYesterday = hours[yesterday];
+    let isOpenYesterday = false;
+    if (scheduleYesterday && scheduleYesterday.active) {
+      isOpenYesterday = checkRangeYesterday(scheduleYesterday.open, scheduleYesterday.close) ||
+                        checkRangeYesterday(scheduleYesterday.open2, scheduleYesterday.close2);
+    }
+
+    const isOpen = isOpenToday || isOpenYesterday;
+    
+    let label = isOpen ? 'Abierto' : 'Cerrado';
+    if (isOpenToday && scheduleToday && (scheduleToday.open === '00:00' && (scheduleToday.close === '00:00' || scheduleToday.close === '23:59'))) {
+      label = 'Abierto 24h';
+    }
+
+    return { open: isOpen, label: label };
   };
 
   useEffect(() => {
@@ -4037,12 +4094,22 @@ function App() {
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '6px', display: 'block' }}>Imagen / Foto del Lugar *</label>
-                        <input type="file" accept="image/*" onChange={(e) => {
+                        <input type="file" accept="image/*" onChange={async (e) => {
                           if (e.target.files && e.target.files[0]) {
-                            setNewAtractivoImage(e.target.files[0]);
-                            const reader = new FileReader();
-                            reader.onload = (ev) => setNewAtractivoPreview(ev.target.result);
-                            reader.readAsDataURL(e.target.files[0]);
+                            const file = e.target.files[0];
+                            try {
+                              const compressed = await convertToWebP(file);
+                              setNewAtractivoImage(compressed);
+                              const reader = new FileReader();
+                              reader.onload = (ev) => setNewAtractivoPreview(ev.target.result);
+                              reader.readAsDataURL(compressed);
+                            } catch (err) {
+                              console.error("Error compressing atractivo image:", err);
+                              setNewAtractivoImage(file);
+                              const reader = new FileReader();
+                              reader.onload = (ev) => setNewAtractivoPreview(ev.target.result);
+                              reader.readAsDataURL(file);
+                            }
                           }
                         }} style={{ display: 'none' }} id="atractivo-img-upload" />
                         <label htmlFor="atractivo-img-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', border: `2px dashed ${isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1'}`, borderRadius: '16px', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc' }}>
@@ -4112,13 +4179,22 @@ function App() {
                             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Click para subir imagen</span>
                           </>
                         )}
-                        <input id="oferta-upload" type="file" accept="image/*" hidden onChange={(e) => {
+                        <input id="oferta-upload" type="file" accept="image/*" hidden onChange={async (e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            setNewOfertaImage(file);
-                            const reader = new FileReader();
-                            reader.onloadend = () => setNewOfertaPreview(reader.result);
-                            reader.readAsDataURL(file);
+                            try {
+                              const compressed = await convertToWebP(file);
+                              setNewOfertaImage(compressed);
+                              const reader = new FileReader();
+                              reader.onloadend = () => setNewOfertaPreview(reader.result);
+                              reader.readAsDataURL(compressed);
+                            } catch (err) {
+                              console.error("Error compressing oferta image:", err);
+                              setNewOfertaImage(file);
+                              const reader = new FileReader();
+                              reader.onloadend = () => setNewOfertaPreview(reader.result);
+                              reader.readAsDataURL(file);
+                            }
                           }
                         }} />
                       </div>
