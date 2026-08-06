@@ -373,6 +373,8 @@ function App() {
     const stored = localStorage.getItem('dcompras_seen_ofertas');
     return stored ? JSON.parse(stored) : [];
   });
+  // Mapa local de vistas para reflejar incrementos sin recargar
+  const [liveViewCounts, setLiveViewCounts] = useState({});
 
   // === EDITOR DE DISEÑO PARA OFERTAS ===
   const [ofertaMode, setOfertaMode] = useState('upload'); // 'upload' | 'design'
@@ -1942,6 +1944,26 @@ function App() {
     e.stopPropagation();
     setStoryProgress(100); 
   };
+
+  // Incrementar view_count cada vez que se visualiza un slide
+  useEffect(() => {
+    if (selectedOferta !== 'open' || activeStoryGroupIndex === null) return;
+    const group = groupedOfertas[activeStoryGroupIndex];
+    if (!group) return;
+    const oferta = group.offers[activeStoryIndex];
+    if (!oferta) return;
+
+    const offerId = oferta.id;
+    // Incremento atómico en BD (fire-and-forget)
+    supabase.rpc('increment_oferta_view', { oferta_id: offerId }).then(() => {});
+
+    // Reflejar en estado local inmediatamente
+    setLiveViewCounts(prev => ({
+      ...prev,
+      [offerId]: (prev[offerId] !== undefined ? prev[offerId] : (oferta.view_count || 0)) + 1
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOferta, activeStoryGroupIndex, activeStoryIndex]);
 
   const modalsRef = useRef({});
   useEffect(() => {
@@ -5820,7 +5842,41 @@ function App() {
                 {/* Main Image */}
                 <div style={{ flexShrink: 0, height: '75dvh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img src={currentOferta.image_url} alt="Oferta" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  
+
+                  {/* View Count Chip */}
+                  {(() => {
+                    const vCount = liveViewCounts[currentOferta.id] !== undefined
+                      ? liveViewCounts[currentOferta.id]
+                      : (currentOferta.view_count || 0);
+                    return (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        left: '14px',
+                        zIndex: 15,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'rgba(0,0,0,0.55)',
+                        backdropFilter: 'blur(6px)',
+                        WebkitBackdropFilter: 'blur(6px)',
+                        borderRadius: '20px',
+                        padding: '5px 12px',
+                        color: '#fff',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        letterSpacing: '0.02em',
+                        pointerEvents: 'none',
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        {vCount.toLocaleString('es-AR')}
+                      </div>
+                    );
+                  })()}
+
                   {/* Tap areas for Prev / Next */}
                   <div onClick={handlePrevStory} style={{ position: 'absolute', top: 0, left: 0, width: '30%', height: '100%', zIndex: 10, cursor: 'w-resize' }}></div>
                   <div onClick={handleNextStory} style={{ position: 'absolute', top: 0, right: 0, width: '70%', height: '100%', zIndex: 10, cursor: 'e-resize' }}></div>
