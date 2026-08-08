@@ -1889,9 +1889,10 @@ function App() {
     const ofertaIdParam = params.get('oferta');
     if (!ofertaIdParam) return;
 
-    // Limpiar URL del navegador
-    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-    window.history.replaceState({path: newUrl}, '', newUrl);
+    const clearUrl = () => {
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({path: newUrl}, '', newUrl);
+    };
 
     if (groupedOfertas.length > 0) {
       // Buscar la oferta entre las ofertas activas
@@ -1906,6 +1907,7 @@ function App() {
         setActiveStoryIndex(storyIndex !== -1 ? storyIndex : 0);
         setSelectedOferta('open');
         setStoryProgress(0);
+        clearUrl();
       } else {
         // No está entre activas → verificar en BD si expiró
         supabase
@@ -1920,6 +1922,7 @@ function App() {
                 description: data.description || ''
               });
             }
+            clearUrl();
           });
       }
     } else {
@@ -1930,15 +1933,19 @@ function App() {
         .eq('id', ofertaIdParam)
         .maybeSingle()
         .then(({ data }) => {
-          if (!data) return;
+          if (!data) {
+            clearUrl();
+            return;
+          }
           const isActive = new Date(data.expires_at) > new Date();
           if (!isActive) {
             setExpiredOfertaInfo({
               commerceName: data.comercios?.name || null,
               description: data.description || ''
             });
+            clearUrl();
           }
-          // Si está activa, el efecto se re-ejecutará cuando groupedOfertas cargue
+          // Si está activa, NO limpiamos la URL, así el efecto se re-ejecuta cuando groupedOfertas cargue
         });
     }
   }, [groupedOfertas]);
