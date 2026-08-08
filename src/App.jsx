@@ -375,6 +375,8 @@ function App() {
   });
   // Mapa local de vistas para reflejar incrementos sin recargar
   const [liveViewCounts, setLiveViewCounts] = useState({});
+  // Estado para modal de oferta flash compartida que ya expiró
+  const [expiredOfertaInfo, setExpiredOfertaInfo] = useState(null); // { commerceName, description }
 
   // === EDITOR DE DISEÑO PARA OFERTAS ===
   const [ofertaMode, setOfertaMode] = useState('upload'); // 'upload' | 'design'
@@ -861,6 +863,7 @@ function App() {
       }
     }
   }, [comercios, atractivos]);
+
 
 
 
@@ -1879,6 +1882,67 @@ function App() {
     });
     return Array.from(groupedMap.values());
   }, [ofertas, publicLocalityId]);
+
+  // Deep linking para Ofertas Flash (separado del otro useEffect porque groupedOfertas se define acá)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ofertaIdParam = params.get('oferta');
+    if (!ofertaIdParam) return;
+
+    // Limpiar URL del navegador
+    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({path: newUrl}, '', newUrl);
+
+    if (groupedOfertas.length > 0) {
+      // Buscar la oferta entre las ofertas activas
+      const groupIndex = groupedOfertas.findIndex(g =>
+        g.offers.some(o => String(o.id) === ofertaIdParam)
+      );
+      if (groupIndex !== -1) {
+        const storyIndex = groupedOfertas[groupIndex].offers.findIndex(
+          o => String(o.id) === ofertaIdParam
+        );
+        setActiveStoryGroupIndex(groupIndex);
+        setActiveStoryIndex(storyIndex !== -1 ? storyIndex : 0);
+        setSelectedOferta('open');
+        setStoryProgress(0);
+      } else {
+        // No está entre activas → verificar en BD si expiró
+        supabase
+          .from('ofertas')
+          .select('id, description, comercios(name)')
+          .eq('id', ofertaIdParam)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) {
+              setExpiredOfertaInfo({
+                commerceName: data.comercios?.name || null,
+                description: data.description || ''
+              });
+            }
+          });
+      }
+    } else {
+      // Las ofertas aún no cargaron: consultar BD directamente
+      supabase
+        .from('ofertas')
+        .select('id, description, expires_at, comercios(name)')
+        .eq('id', ofertaIdParam)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data) return;
+          const isActive = new Date(data.expires_at) > new Date();
+          if (!isActive) {
+            setExpiredOfertaInfo({
+              commerceName: data.comercios?.name || null,
+              description: data.description || ''
+            });
+          }
+          // Si está activa, el efecto se re-ejecutará cuando groupedOfertas cargue
+        });
+    }
+  }, [groupedOfertas]);
+
 
   useEffect(() => {
     if (activeStoryGroupIndex === null || selectedOferta !== 'open') {
@@ -5944,17 +6008,20 @@ function App() {
                       onClick={async () => {
                         const commerceName = currentOferta.comercios?.name;
                         const textTitle = commerceName ? `¡Mirá esta OFERTA FLASH de ${commerceName} en D'Compras!` : `¡Mirá esta OFERTA FLASH en D'Compras!`;
+                        const descText = currentOferta.description ? `\n\n📢 ${currentOferta.description}` : '';
+                        const shareUrl = `${window.location.origin}${window.location.pathname}?oferta=${currentOferta.id}`;
+                        
                         const shareData = {
-                          title: `Oferta Flash: ${commerceName || 'D\'Compras'}`,
-                          text: `${textTitle}\n\n${currentOferta.description}\n\nDescargá la app para ver más ofertas en tu ciudad.`,
-                          url: window.location.origin
+                          title: `Oferta Flash: ${commerceName || "D'Compras"}`,
+                          text: `${textTitle}${descText}\n\n👉`,
+                          url: shareUrl
                         };
                         try {
                           if (navigator.share) {
                             await navigator.share(shareData);
                           } else {
-                            navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
-                            alert("¡Enlace y texto copiados al portapapeles!");
+                            navigator.clipboard.writeText(`${shareData.title}\n${shareData.text} ${shareData.url}`);
+                            alert("¡Enlace copiado al portapapeles!");
                           }
                         } catch (err) {
                           console.log('Error sharing:', err);
@@ -5970,6 +6037,55 @@ function App() {
           </div>
           );
         })()}
+
+      {/* MODAL: OFERTA FLASH COMPARTIDA EXPIRADA */}
+      {expiredOfertaInfo && (
+        <div
+          className="gallery-modal"
+          style={{ zIndex: 12000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.75)' }}
+          onClick={() => setExpiredOfertaInfo(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: isDark ? '#1e293b' : '#ffffff',
+              borderRadius: '24px',
+              padding: '36px 28px',
+              maxWidth: '380px',
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
+              animation: 'slideUp 0.3s ease-out'
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏰</div>
+            <h3 style={{ margin: '0 0 8px 0', color: isDark ? '#fff' : '#0f172a', fontSize: '1.3rem', fontFamily: 'Outfit, sans-serif' }}>
+              Esta oferta ya expiró
+            </h3>
+            {expiredOfertaInfo.commerceName && (
+              <p style={{ margin: '0 0 10px 0', color: '#f59e0b', fontSize: '0.95rem', fontWeight: 600 }}>
+                {expiredOfertaInfo.commerceName}
+              </p>
+            )}
+            {expiredOfertaInfo.description && (
+              <p style={{ margin: '0 0 20px 0', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                {expiredOfertaInfo.description}
+              </p>
+            )}
+            <p style={{ margin: '0 0 24px 0', color: isDark ? '#64748b' : '#94a3b8', fontSize: '0.82rem' }}>
+              Esta oferta flash ya no está disponible. ¡Explorá otras ofertas activas en D'Compras!
+            </p>
+            <button
+              className="action-btn primary"
+              style={{ width: '100%', padding: '14px', borderRadius: '14px', fontSize: '0.95rem' }}
+              onClick={() => setExpiredOfertaInfo(null)}
+            >
+              Ver ofertas activas
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     );
   }
