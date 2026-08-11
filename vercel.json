@@ -1,50 +1,24 @@
 {
-  "rewrites": [
+  "outputDirectory": "dist",
+  "routes": [
     {
-      "source": "/",
-      "has": [
-        { "type": "query", "key": "comercio" }
-      ],
-      "destination": "/api/dynamic-og"
+      "src": "/",
+      "has": [{ "type": "query", "key": "comercio" }],
+      "dest": "/api/dynamic-og"
     },
     {
-      "source": "/(.*)",
-      "has": [
-        { "type": "query", "key": "comercio" }
-      ],
-      "destination": "/api/dynamic-og"
+      "src": "/",
+      "has": [{ "type": "query", "key": "oferta" }],
+      "dest": "/api/dynamic-og"
     },
     {
-      "source": "/",
-      "has": [
-        { "type": "query", "key": "oferta" }
-      ],
-      "destination": "/api/dynamic-og"
+      "src": "/",
+      "has": [{ "type": "query", "key": "atractivo" }],
+      "dest": "/api/dynamic-og"
     },
     {
-      "source": "/(.*)",
-      "has": [
-        { "type": "query", "key": "oferta" }
-      ],
-      "destination": "/api/dynamic-og"
-    },
-    {
-      "source": "/",
-      "has": [
-        { "type": "query", "key": "atractivo" }
-      ],
-      "destination": "/api/dynamic-og"
-    },
-    {
-      "source": "/(.*)",
-      "has": [
-        { "type": "query", "key": "atractivo" }
-      ],
-      "destination": "/api/dynamic-og"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
