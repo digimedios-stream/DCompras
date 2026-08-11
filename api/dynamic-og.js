@@ -39,13 +39,21 @@ export default async function handler(req, res) {
   // 2. Fetch dynamic data from Supabase
   try {
     if (comercio) {
-      const { data, error } = await supabase
-        .from('comercios')
-        .select('name, main_image, description')
-        .or(`id.eq.${comercio},slug.eq.${comercio}`)
-        .single();
+      let isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(comercio);
+      let isNumeric = !isNaN(comercio) && !isNaN(parseFloat(comercio));
       
-      if (data) {
+      let query = supabase.from('comercios').select('name, main_image, description');
+      if (isUuid || isNumeric) {
+        query = query.or(`id.eq.${comercio},slug.eq.${comercio}`);
+      } else {
+        query = query.eq('slug', comercio);
+      }
+      
+      const { data, error } = await query.single();
+      
+      if (error) {
+        console.error("Supabase query error:", error);
+      } else if (data) {
         ogTitle = `${data.name} | D'Compras`;
         if (data.description) ogDescription = data.description;
         if (data.main_image) ogImage = data.main_image;
@@ -60,7 +68,8 @@ export default async function handler(req, res) {
       if (data) {
         ogTitle = `Oferta Flash de ${data.comercios?.name || "D'Compras"}`;
         ogDescription = data.description || "¡Aprovecha esta oferta flash por tiempo limitado!";
-        if (data.image_url) ogImage = data.image_url;
+        // El usuario solicitó explícitamente que la oferta muestre el logo de DCompras (la imagen por defecto)
+        // en lugar de la imagen de la oferta.
       }
     } else if (atractivo) {
       const { data, error } = await supabase
