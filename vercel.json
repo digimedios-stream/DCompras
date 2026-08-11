@@ -2,6 +2,27 @@
   "rewrites": [
     {
       "source": "/(.*)",
+      "has": [
+        { "type": "query", "key": "comercio" }
+      ],
+      "destination": "/api/dynamic-og"
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "query", "key": "oferta" }
+      ],
+      "destination": "/api/dynamic-og"
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "query", "key": "atractivo" }
+      ],
+      "destination": "/api/dynamic-og"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
