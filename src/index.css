@@ -1486,6 +1486,22 @@ h4,
   border: none;
 }
 
+.light-theme .action-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #1e293b;
+}
+
+.light-theme .action-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.light-theme .action-btn.primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 20px;
