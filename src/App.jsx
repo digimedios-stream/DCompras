@@ -5363,13 +5363,7 @@ function App() {
                 </div>
               </button>
 
-              <button onClick={() => window.open('https://form.jotform.com/digimediosapps/ingreso', '_blank')} style={{ background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`, padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', textAlign: 'left' }}>
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '12px', borderRadius: '15px' }}><ClipboardEdit size={28} /></div>
-                <div>
-                  <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Solicitar Ingreso de Comercio</h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Completa el formulario para unirte a D'Compras.</p>
-                </div>
-              </button>
+
             </div>
 
             {/* TOGGLE DE NOTIFICACIONES - Solo visible si la app está instalada o el navegador soporta notificaciones */}
